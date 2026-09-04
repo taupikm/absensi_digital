@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistem Absensi Terpadu & Dashboard</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <!-- Library Export Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
@@ -41,7 +40,6 @@
     .alert-warning { background: #fff3cd; color: #856404; }
     .alert-danger { background: #f8d7da; color: #721c24; }
 
-    /* Modal Login */
     #loginModal {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 999;
@@ -58,7 +56,6 @@
 </head>
 <body>
 
-<!-- MODAL LOGIN PIN -->
 <div id="loginModal" style="display:none;">
   <div class="modal-content">
     <h3>Autentikasi PIN</h3>
@@ -74,11 +71,10 @@
 <div class="container">
   <div style="display:flex; justify-content:space-between; align-items:center;" class="no-print">
     <h2 style="margin:0;">Sistem Absensi Sekolah</h2>
-    <div id="userRoleBadge" style="font-size:12px; background:#e8f0fe; color:#1a73e8; padding:5px 10px; border-radius:15px; font-weight:bold;">Status: Orang Tua / Tamu</div>
+    <div id="userRoleBadge" style="font-size:12px; background:#e8f0fe; color:#1a73e8; padding:5px 10px; border-radius:15px; font-weight:bold;">Status: Siswa / Tamu</div>
   </div>
   <hr class="no-print" style="margin: 15px 0;">
 
-  <!-- MENU DASHBOARD -->
   <div class="menu-grid no-print">
     <button class="btn-menu locked" id="menuBtn-scanner" onclick="checkMenuAccess('scanner', this)">📷 Scanner</button>
     <button class="btn-menu active" id="menuBtn-cari" onclick="switchMenu('cari', this)">🔍 Cek Data</button>
@@ -104,7 +100,7 @@
       <label>Peran:</label>
       <div style="display:flex; gap:10px;" id="roleButtonContainer">
         <button type="button" id="btnSiswa" class="btn-primary" onclick="setRole('siswa')">Siswa</button>
-        <button type="button" id="btnGuru" style="background:#6c757d; color:white; border:none;" onclick="setRole('guru')">Guru</button>
+        <button type="button" id="btnGuru" style="background:#6c757d; color:white; border:none; display:none;" onclick="setRole('guru')">Guru</button>
       </div>
     </div>
     <button id="btnCameraToggle" class="btn-toggle" onclick="toggleCamera()">Buka Kamera</button>
@@ -117,9 +113,8 @@
     <div class="form-group">
       <label>Peran:</label>
       <select id="cariPeran">
-        <option value="ALL">Semua (Siswa & Guru)</option>
         <option value="SISWA">Siswa</option>
-        <option value="GURU">Guru</option>
+        <option value="GURU" id="optCariGuru" style="display:none;">Guru (Khusus Admin)</option>
       </select>
     </div>
     <div class="form-group">
@@ -219,13 +214,14 @@
 
   <!-- 5. PENGATURAN SESI & HARI LIBUR -->
   <div id="menu-pengaturan" class="section">
-    <h3>Pengaturan Jam Sesi</h3>
+    <h3>Pengaturan Jam Sesi & PIN Akses</h3>
+    <p style="font-size:12px; color:#666;">Ubah jam operasional sesi maupun PIN akses di bawah ini secara langsung.</p>
     <div class="table-responsive">
       <table>
         <thead>
           <tr>
-            <th>Sesi</th>
-            <th>Mulai (TW)</th>
+            <th>Sesi / PIN Key</th>
+            <th>Kolom 1 (Mulai / Nilai PIN)</th>
             <th>Batas TW (TL)</th>
             <th>Tutup Sesi</th>
             <th>Absen Otomatis</th>
@@ -234,10 +230,9 @@
         <tbody id="tablePengaturanBody"></tbody>
       </table>
     </div>
-    <button class="btn-primary" style="margin-top:10px;" onclick="savePengaturan()">Simpan Pengaturan Jam</button>
+    <button class="btn-primary" style="margin-top:10px;" onclick="savePengaturan()">Simpan Pengaturan</button>
 
     <h3 style="margin-top:25px;">Manajemen Hari Libur</h3>
-    <p style="font-size:12px; color:#666;">Tanggal dalam daftar ini otomatis diabaikan dalam perhitungan persentase kehadiran.</p>
     <div class="table-responsive">
       <table id="tableLibur">
         <thead>
@@ -257,13 +252,13 @@
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxhALoX7has0eraiWn6P3_p-_LAWRazh0SHLJlELuR3dSWv9d6I5ocvt6mN8JePf67X/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxh1i4L_eOZVNAvY8P6kcJZJwIv1aLjvFL19_q5eyNX4wHSz4hKj0ukmzysDj6zvhP7/exec";
 
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
   let isCameraOn = false;
   let isProcessing = false;
-  let userSession = 'tamu'; // 'tamu', 'guru', 'admin', 'pengaturan'
+  let userSession = 'tamu'; 
   let pendingMenu = '';
 
   document.getElementById('izinTanggal').value = new Date().toISOString().split('T')[0];
@@ -314,6 +309,7 @@
   function applyRoleAccessUI(role) {
     const badge = document.getElementById('userRoleBadge');
     const btnGuruElem = document.getElementById('btnGuru');
+    const optCariGuru = document.getElementById('optCariGuru');
 
     if (role === 'guru') {
       badge.innerText = "Status: Guru (Akses Terbatas)";
@@ -321,20 +317,21 @@
       document.getElementById('menuBtn-izin').classList.remove('locked');
       document.getElementById('menuBtn-rekap').classList.remove('locked');
       
-      // Kunci tombol pilih peran Guru di scanner khusus untuk Admin
       if (btnGuruElem) btnGuruElem.style.display = 'none';
+      if (optCariGuru) optCariGuru.style.display = 'none';
       setRole('siswa');
-    } else if (role === 'admin') {
-      badge.innerText = "Status: Admin Sekolah";
-      document.getElementById('menuBtn-scanner').classList.remove('locked');
-      document.getElementById('menuBtn-izin').classList.remove('locked');
-      document.getElementById('menuBtn-rekap').classList.remove('locked');
+    } else if (role === 'admin' || role === 'pengaturan') {
+      badge.innerText = (role === 'admin') ? "Status: Admin Sekolah" : "Status: Super Admin (Pengaturan)";
+      if (role === 'pengaturan') {
+        document.querySelectorAll('.menu-grid button').forEach(b => b.classList.remove('locked'));
+      } else {
+        document.getElementById('menuBtn-scanner').classList.remove('locked');
+        document.getElementById('menuBtn-izin').classList.remove('locked');
+        document.getElementById('menuBtn-rekap').classList.remove('locked');
+      }
       
       if (btnGuruElem) btnGuruElem.style.display = 'block';
-    } else if (role === 'pengaturan') {
-      badge.innerText = "Status: Super Admin (Pengaturan)";
-      document.querySelectorAll('.menu-grid button').forEach(b => b.classList.remove('locked'));
-      if (btnGuruElem) btnGuruElem.style.display = 'block';
+      if (optCariGuru) optCariGuru.style.display = 'block';
     }
   }
 
@@ -366,7 +363,6 @@
     document.getElementById('rekapKelasContainer').style.display = (r === 'siswa') ? 'block' : 'none';
   }
 
-  // --- SCANNER ---
   function toggleCamera() { isCameraOn ? stopCamera() : startCamera(); }
 
   function startCamera() {
@@ -411,7 +407,6 @@
     });
   }
 
-  // --- INPUT IZIN ---
   function simpanIzin() {
     const id = document.getElementById('izinId').value;
     if (!id) return showAlert("danger", "ID/NISN/NIP wajib diisi!");
@@ -430,7 +425,6 @@
     });
   }
 
-  // --- CARI KEHADIRAN ---
   function cariKehadiran() {
     showAlert("warning", "Mencari data...");
     sendRequest({
@@ -451,7 +445,6 @@
     });
   }
 
-  // --- REKAP KEHADIRAN & EXPORT ---
   function loadOpsiKelas() {
     sendRequest({ action: 'get_kelas' }, res => {
       if (res.status === 'success') {
@@ -502,24 +495,31 @@
     XLSX.writeFile(wb, `Rekap_Kehadiran_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
-  // --- PENGATURAN SESI & HARI LIBUR ---
   function loadPengaturan() {
     sendRequest({ action: 'get_pengaturan' }, res => {
       const tbody = document.getElementById('tablePengaturanBody');
       tbody.innerHTML = '';
-      res.data.forEach((p, idx) => {
+      res.data.forEach((p) => {
+        const isPinRow = p.sesi.startsWith('PIN_');
+        let col1Input = isPinRow ? 
+          `<input type="text" class="p-mulai" value="${p.mulai}" placeholder="Nilai PIN...">` : 
+          `<input type="time" class="p-mulai" value="${p.mulai}">`;
+
+        let col2Input = isPinRow ? `<span style="color:#888; font-style:italic;">(Pengaturan PIN Keamanan)</span>` : `<input type="time" class="p-tw" value="${p.batasTW}">`;
+        let col3Input = isPinRow ? `-` : `<input type="time" class="p-tutup" value="${p.tutup}">`;
+        let col4Input = isPinRow ? `-` : `
+          <select class="p-alpa">
+            <option value="Alpa" ${p.alpa === 'Alpa' ? 'selected' : ''}>Alpa</option>
+            <option value="Bolos" ${p.alpa === 'Bolos' ? 'selected' : ''}>Bolos</option>
+          </select>`;
+
         tbody.innerHTML += `
           <tr>
             <td><b>${p.sesi}</b><input type="hidden" class="p-sesi" value="${p.sesi}"></td>
-            <td><input type="time" class="p-mulai" value="${p.mulai}"></td>
-            <td><input type="time" class="p-tw" value="${p.batasTW}"></td>
-            <td><input type="time" class="p-tutup" value="${p.tutup}"></td>
-            <td>
-              <select class="p-alpa">
-                <option value="Alpa" ${p.alpa === 'Alpa' ? 'selected' : ''}>Alpa</option>
-                <option value="Bolos" ${p.alpa === 'Bolos' ? 'selected' : ''}>Bolos</option>
-              </select>
-            </td>
+            <td>${col1Input}</td>
+            <td>${col2Input}</td>
+            <td>${col3Input}</td>
+            <td>${col4Input}</td>
           </tr>`;
       });
     });
@@ -529,16 +529,18 @@
     let config = [];
     const rows = document.querySelectorAll('#tablePengaturanBody tr');
     rows.forEach(r => {
+      const sesiVal = r.querySelector('.p-sesi').value;
+      const isPinRow = sesiVal.startsWith('PIN_');
       config.push({
-        sesi: r.querySelector('.p-sesi').value,
+        sesi: sesiVal,
         mulai: r.querySelector('.p-mulai').value,
-        batasTW: r.querySelector('.p-tw').value,
-        tutup: r.querySelector('.p-tutup').value,
-        alpa: r.querySelector('.p-alpa').value
+        batasTW: isPinRow ? '' : (r.querySelector('.p-tw') ? r.querySelector('.p-tw').value : ''),
+        tutup: isPinRow ? '' : (r.querySelector('.p-tutup') ? r.querySelector('.p-tutup').value : ''),
+        alpa: isPinRow ? '' : (r.querySelector('.p-alpa') ? r.querySelector('.p-alpa').value : '')
       });
     });
 
-    showAlert("warning", "Menyimpan pengaturan sesi...");
+    showAlert("warning", "Menyimpan pengaturan...");
     sendRequest({ action: 'save_pengaturan', config: config }, res => {
       showAlert(res.status, res.message);
     });
@@ -592,7 +594,6 @@
     });
   }
 
-  // --- HELPER AJAX ---
   function sendRequest(payload, callback) {
     fetch(GAS_URL, {
       method: "POST",

@@ -37,6 +37,8 @@
     .btn-danger:hover { background: #c82333; }
     .btn-secondary { background: #6c757d; color: white; border: none; font-weight: bold; cursor: pointer; }
     .btn-secondary:hover { background: #5a6268; }
+    .btn-guru { background: #6c757d; color: white; border: none; font-weight: bold; cursor: pointer; }
+    .btn-guru.active { background: #1a73e8; }
     
     #reader { width: 100%; border-radius: 8px; overflow: hidden; margin-top: 10px; min-height: 220px; background: #111; }
     .table-responsive { overflow-x: auto; margin-top: 15px; }
@@ -152,7 +154,7 @@
       <label>Peran:</label>
       <div style="display:flex; gap:10px;">
         <button type="button" id="btnSiswa" class="btn-primary" onclick="setRole('siswa')">Siswa</button>
-        <button type="button" id="btnGuru" style="background:#6c757d; color:white; border:none;" onclick="setRole('guru')">Guru</button>
+        <button type="button" id="btnGuru" class="btn-guru" onclick="setRole('guru')">Guru</button>
       </div>
     </div>
     <button id="btnCameraToggle" class="btn-toggle" onclick="toggleCamera()">Buka Kamera</button>
@@ -191,7 +193,7 @@
   <!-- 3. INPUT IZIN / SAKIT -->
   <div id="menu-izin" class="section">
     <h3>Input Izin / Sakit Manual</h3>
-    <div class="form-group">
+    <div class="form-group" id="izinRoleContainer">
       <label>Peran:</label>
       <select id="izinRole">
         <option value="siswa">Siswa</option>
@@ -219,7 +221,7 @@
   <div id="menu-rekap" class="section printable">
     <h3>Rekap Kehadiran</h3>
     <div class="no-print">
-      <div class="form-group">
+      <div class="form-group" id="rekapRoleContainer">
         <label>Tipe Rekap:</label>
         <select id="rekapRole" onchange="toggleRekapFilter()">
           <option value="siswa">Rekap Siswa</option>
@@ -333,7 +335,7 @@
 
 <script>
   // ============ KONFIGURASI ============
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbzWiW0l5LiqS31G_XNVQ2Nu-ZIFCIAsU5ERDZMG7__xfTOZnPxenvFohowcjkWRJ7LZ/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyu5kj29iRzBQna-QdlUORKeRdh8zF-TP2TNozE28B-_OS_5PkO2-kS86jj0EgQ0HY/exec";
   
   // ============ VARIABEL GLOBAL ============
   let currentRole = 'siswa';
@@ -368,8 +370,8 @@
           verifySession(session, function(isValid, role) {
             if (isValid) {
               userSession = session;
-              updateUIForRole(role);
-              const lastMenu = localStorage.getItem('last_menu') || 'scanner';
+              applyRoleRestrictions(role);
+              const lastMenu = localStorage.getItem('last_menu') || 'cari';
               const btn = document.getElementById(`menu-${lastMenu}-btn`);
               if (btn && !btn.classList.contains('disabled')) {
                 switchMenu(lastMenu, btn);
@@ -424,15 +426,79 @@
 
   // ============ FUNGSI LOGIN ============
   function disableAllMenus() {
-    document.querySelectorAll('.btn-menu').forEach(btn => {
+    document.querySelectorAll('.btn-menu').forEach(function(btn) {
       btn.classList.add('disabled');
     });
   }
 
   function enableAllMenus() {
-    document.querySelectorAll('.btn-menu').forEach(btn => {
+    document.querySelectorAll('.btn-menu').forEach(function(btn) {
       btn.classList.remove('disabled');
     });
+  }
+
+  function applyRoleRestrictions(role) {
+    // Reset semua menu
+    enableAllMenus();
+    
+    if (role === 'guru') {
+      // GURU: Hanya akses untuk SISWA
+      // Nonaktifkan menu yang tidak boleh diakses guru
+      document.getElementById('menu-pengaturan-btn').classList.add('disabled');
+      
+      // Set default role ke siswa
+      setRole('siswa');
+      document.getElementById('btnSiswa').classList.add('active');
+      document.getElementById('btnGuru').classList.remove('active');
+      
+      // Sembunyikan opsi guru di izin - hanya siswa
+      document.getElementById('izinRole').value = 'siswa';
+      document.getElementById('izinRole').style.display = 'none';
+      document.querySelector('#menu-izin .form-group:first-child label').textContent = 'Peran: Siswa (Otomatis)';
+      
+      // Rekap hanya siswa
+      document.getElementById('rekapRole').value = 'siswa';
+      document.getElementById('rekapRole').disabled = true;
+      document.getElementById('rekapKelasContainer').style.display = 'block';
+      
+      // Scanner hanya untuk siswa - disable tombol guru
+      document.getElementById('btnGuru').style.cursor = 'not-allowed';
+      document.getElementById('btnGuru').style.opacity = '0.5';
+      document.getElementById('btnSiswa').style.opacity = '1';
+      document.getElementById('btnSiswa').style.cursor = 'pointer';
+      
+      // Update user info
+      const userInfo = document.getElementById('userInfo');
+      userInfo.classList.add('active');
+      document.getElementById('userName').textContent = 'Guru';
+      document.getElementById('userRole').textContent = '👨‍🏫 Guru (Siswa Only)';
+      
+    } else if (role === 'admin') {
+      // ADMIN: Full access
+      document.getElementById('izinRole').style.display = 'block';
+      document.getElementById('izinRole').value = 'siswa';
+      document.querySelector('#menu-izin .form-group:first-child label').textContent = 'Peran:';
+      document.getElementById('rekapRole').disabled = false;
+      toggleRekapFilter();
+      
+      // Enable semua menu
+      enableAllMenus();
+      
+      // Update user info
+      const userInfo = document.getElementById('userInfo');
+      userInfo.classList.add('active');
+      document.getElementById('userName').textContent = 'Admin';
+      document.getElementById('userRole').textContent = '👑 Admin';
+      
+      // Reset tombol scanner
+      document.getElementById('btnGuru').style.cursor = 'pointer';
+      document.getElementById('btnGuru').style.opacity = '1';
+      document.getElementById('btnSiswa').style.cursor = 'pointer';
+      document.getElementById('btnSiswa').style.opacity = '1';
+    }
+    
+    // Cari menu selalu tersedia
+    document.getElementById('menu-cari-btn').classList.remove('disabled');
   }
 
   function updateUIForRole(role) {
@@ -440,47 +506,7 @@
       userSession.isLoggedIn = true;
       userSession.role = role;
       
-      const userInfo = document.getElementById('userInfo');
-      userInfo.classList.add('active');
-      document.getElementById('userName').textContent = role === 'guru' ? 'Guru' : 'Admin';
-      document.getElementById('userRole').textContent = role === 'guru' ? '👨‍🏫 Guru' : '👑 Admin';
-      
-      enableAllMenus();
-      
-      if (role === 'guru') {
-        // Guru: Hanya akses untuk SISWA
-        // Disable menu yang tidak boleh diakses guru
-        document.getElementById('menu-pengaturan-btn').classList.add('disabled');
-        
-        // Set default role ke siswa
-        setRole('siswa');
-        document.getElementById('btnSiswa').style.background = '#1a73e8';
-        document.getElementById('btnGuru').style.background = '#6c757d';
-        
-        // Sembunyikan opsi guru di izin - hanya siswa
-        document.getElementById('izinRole').value = 'siswa';
-        document.getElementById('izinRole').style.display = 'none';
-        document.querySelector('#menu-izin .form-group:first-child label').textContent = 'Peran: Siswa (Otomatis)';
-        
-        // Rekap hanya siswa
-        document.getElementById('rekapRole').value = 'siswa';
-        document.getElementById('rekapRole').disabled = true;
-        document.getElementById('rekapKelasContainer').style.display = 'block';
-        
-        // Scanner hanya untuk siswa
-        setRole('siswa');
-        
-      } else {
-        // Admin: Full access
-        document.getElementById('izinRole').style.display = 'block';
-        document.getElementById('izinRole').value = 'siswa';
-        document.querySelector('#menu-izin .form-group:first-child label').textContent = 'Peran:';
-        document.getElementById('rekapRole').disabled = false;
-        toggleRekapFilter();
-      }
-      
-      // Cari menu selalu tersedia
-      document.getElementById('menu-cari-btn').classList.remove('disabled');
+      applyRoleRestrictions(role);
     }
   }
 
@@ -514,7 +540,7 @@
         userSession.role = 'admin';
         userSession.pin = pin;
         localStorage.setItem('absensi_session', JSON.stringify(userSession));
-        updateUIForRole('admin');
+        applyRoleRestrictions('admin');
         tutupLogin();
         switchMenu('pengaturan', document.getElementById('menu-pengaturan-btn'));
         loadPengaturan();
@@ -534,10 +560,10 @@
         userSession.role = res.role;
         userSession.pin = pin;
         localStorage.setItem('absensi_session', JSON.stringify(userSession));
-        updateUIForRole(res.role);
+        applyRoleRestrictions(res.role);
         tutupLogin();
         
-        const target = document.getElementById('loginModal').dataset.targetMenu || 'scanner';
+        const target = document.getElementById('loginModal').dataset.targetMenu || 'cari';
         const btn = document.getElementById(`menu-${target}-btn`);
         if (btn && !btn.classList.contains('disabled')) {
           switchMenu(target, btn);
@@ -575,7 +601,7 @@
     }
     
     // Jika menu pengaturan dan bukan admin
-    if (menuName === 'pengaturan' && userSession.isLoggedIn && userSession.role !== 'admin') {
+    if (menuName === 'pengaturan') {
       showLoginModal(menuName);
       return;
     }
@@ -589,11 +615,16 @@
     
     if (isCameraOn) stopCamera();
     
-    document.querySelectorAll('.btn-menu').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.btn-menu').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    document.querySelectorAll('.section').forEach(function(s) {
+      s.classList.remove('active');
+    });
     
     if (btnEl) btnEl.classList.add('active');
-    document.getElementById(`menu-${menuName}`).classList.add('active');
+    const menuElement = document.getElementById(`menu-${menuName}`);
+    if (menuElement) menuElement.classList.add('active');
     hideAlert();
 
     if (menuName === 'rekap') { 
@@ -607,9 +638,28 @@
   }
 
   function setRole(role) {
+    // Cek apakah guru bisa memilih role guru
+    if (userSession.role === 'guru' && role === 'guru') {
+      showAlert('warning', 'Guru hanya bisa absen untuk siswa!');
+      return;
+    }
+    
     currentRole = role;
-    document.getElementById('btnSiswa').style.background = (role === 'siswa') ? '#1a73e8' : '#6c757d';
-    document.getElementById('btnGuru').style.background = (role === 'guru') ? '#1a73e8' : '#6c757d';
+    
+    const btnSiswa = document.getElementById('btnSiswa');
+    const btnGuru = document.getElementById('btnGuru');
+    
+    if (role === 'siswa') {
+      btnSiswa.style.background = '#1a73e8';
+      btnSiswa.style.color = 'white';
+      btnGuru.style.background = '#6c757d';
+      btnGuru.style.color = 'white';
+    } else {
+      btnSiswa.style.background = '#6c757d';
+      btnSiswa.style.color = 'white';
+      btnGuru.style.background = '#1a73e8';
+      btnGuru.style.color = 'white';
+    }
   }
 
   function toggleRekapFilter() {
@@ -638,7 +688,7 @@
       { facingMode: "environment" },
       { fps: 10, qrbox: { width: 220, height: 220 } },
       onScanSuccess
-    ).then(() => {
+    ).then(function() {
       isCameraOn = true;
       const btn = document.getElementById('btnCameraToggle');
       btn.innerText = "Tutup Kamera";
@@ -651,7 +701,7 @@
 
   function stopCamera() {
     if (html5QrcodeScanner) {
-      html5QrcodeScanner.stop().then(() => {
+      html5QrcodeScanner.stop().then(function() {
         html5QrcodeScanner.clear();
         html5QrcodeScanner = null;
         isCameraOn = false;
@@ -725,9 +775,9 @@
       }
 
       res.data.forEach(function(r) {
-        tbody.innerHTML += `<tr><td>${r.timestamp}</td><td>${r.peran}</td><td>${r.id}</td><td>${r.nama}</td><td>${r.sesi}</td></tr>`;
+        tbody.innerHTML += '<tr><td>' + r.timestamp + '</td><td>' + r.peran + '</td><td>' + r.id + '</td><td>' + r.nama + '</td><td>' + r.sesi + '</td></tr>';
       });
-      showAlert('success', `Ditemukan ${res.data.length} data.`);
+      showAlert('success', 'Ditemukan ' + res.data.length + ' data.');
     });
   }
 
@@ -739,7 +789,7 @@
         select.innerHTML = '<option value="">-- Semua Kelas --</option>';
         if (res.data) {
           res.data.forEach(function(k) {
-            select.innerHTML += `<option value="${k}">${k}</option>`;
+            select.innerHTML += '<option value="' + k + '">' + k + '</option>';
           });
         }
       }
@@ -760,7 +810,7 @@
       hideAlert();
       const tbody = document.getElementById('tableRekapBody');
       tbody.innerHTML = '';
-      document.getElementById('labelTotalHari').innerText = `Total Hari Kerja/Masuk dalam Periode: ${res.totalHari || 0} Hari`;
+      document.getElementById('labelTotalHari').innerText = 'Total Hari Kerja/Masuk dalam Periode: ' + (res.totalHari || 0) + ' Hari';
 
       if (!res.data || res.data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Data tidak ditemukan.</td></tr>';
@@ -768,19 +818,19 @@
       }
 
       res.data.forEach(function(s) {
-        tbody.innerHTML += `
+        tbody.innerHTML += '
           <tr>
-            <td>${s.id}</td>
-            <td>${s.nama}</td>
-            <td>${s.unit}</td>
-            <td>${s.tw}</td>
-            <td>${s.tl}</td>
-            <td>${s.izin}</td>
-            <td>${s.sakit}</td>
-            <td>${s.alpa}</td>
-            <td><b>${s.totalHadir}</b></td>
-            <td><b>${s.persentase}%</b></td>
-          </tr>`;
+            <td>' + s.id + '</td>
+            <td>' + s.nama + '</td>
+            <td>' + s.unit + '</td>
+            <td>' + s.tw + '</td>
+            <td>' + s.tl + '</td>
+            <td>' + s.izin + '</td>
+            <td>' + s.sakit + '</td>
+            <td>' + s.alpa + '</td>
+            <td><b>' + s.totalHadir + '</b></td>
+            <td><b>' + s.persentase + '%</b></td>
+          </tr>';
       });
     });
   }
@@ -788,7 +838,7 @@
   function exportToExcel() {
     const table = document.getElementById("tableRekap");
     const wb = XLSX.utils.table_to_book(table, { sheet: "Rekap Kehadiran" });
-    XLSX.writeFile(wb, `Rekap_Kehadiran_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(wb, 'Rekap_Kehadiran_' + new Date().toISOString().split('T')[0] + '.xlsx');
   }
 
   // ============ PENGATURAN SESI ============
@@ -801,19 +851,19 @@
         return;
       }
       res.data.forEach(function(p) {
-        tbody.innerHTML += `
+        tbody.innerHTML += '
           <tr>
-            <td><b>${p.sesi}</b><input type="hidden" class="p-sesi" value="${p.sesi}"></td>
-            <td><input type="time" class="p-mulai" value="${p.mulai}"></td>
-            <td><input type="time" class="p-tw" value="${p.batasTW}"></td>
-            <td><input type="time" class="p-tutup" value="${p.tutup}"></td>
+            <td><b>' + p.sesi + '</b><input type="hidden" class="p-sesi" value="' + p.sesi + '"></td>
+            <td><input type="time" class="p-mulai" value="' + p.mulai + '"></td>
+            <td><input type="time" class="p-tw" value="' + p.batasTW + '"></td>
+            <td><input type="time" class="p-tutup" value="' + p.tutup + '"></td>
             <td>
               <select class="p-alpa">
-                <option value="Alpa" ${p.alpa === 'Alpa' ? 'selected' : ''}>Alpa</option>
-                <option value="Bolos" ${p.alpa === 'Bolos' ? 'selected' : ''}>Bolos</option>
+                <option value="Alpa" ' + (p.alpa === 'Alpa' ? 'selected' : '') + '>Alpa</option>
+                <option value="Bolos" ' + (p.alpa === 'Bolos' ? 'selected' : '') + '>Bolos</option>
               </select>
             </td>
-          </tr>`;
+          </tr>';
       });
     });
   }
@@ -843,7 +893,6 @@
     sendRequest({ action: 'save_pengaturan', config: config }, function(res) {
       showAlert(res.status, res.message);
       if (res.status === 'success') {
-        // Reload PIN config
         loadPinConfig();
       }
     });
@@ -859,12 +908,12 @@
         return;
       }
       res.data.forEach(function(item) {
-        tbody.innerHTML += `
+        tbody.innerHTML += '
           <tr>
-            <td>${item.tanggal}</td>
-            <td>${item.keterangan || '-'}</td>
-            <td><button class="btn-danger btn-sm" onclick="hapusLibur('${item.tanggal}')">Hapus</button></td>
-          </tr>`;
+            <td>' + item.tanggal + '</td>
+            <td>' + (item.keterangan || '-') + '</td>
+            <td><button class="btn-danger btn-sm" onclick="hapusLibur(\'' + item.tanggal + '\')">Hapus</button></td>
+          </tr>';
       });
     });
   }
@@ -902,7 +951,7 @@
   }
 
   function hapusLibur(tanggal) {
-    if (!confirm(`Hapus hari libur tanggal ${tanggal}?`)) return;
+    if (!confirm('Hapus hari libur tanggal ' + tanggal + '?')) return;
     
     showAlert("warning", "Menghapus data libur...");
     sendRequest({ action: 'delete_libur', tanggal: tanggal }, function(res) {
@@ -931,7 +980,8 @@
 
   function showAlert(type, message) {
     const alertDiv = document.getElementById('alert');
-    alertDiv.className = `alert-${type}`;
+    if (!alertDiv) return;
+    alertDiv.className = 'alert-' + type;
     alertDiv.innerText = message;
     alertDiv.style.display = 'block';
     if (type === 'success' || type === 'info') {
@@ -940,7 +990,8 @@
   }
 
   function hideAlert() { 
-    document.getElementById('alert').style.display = 'none'; 
+    const alertDiv = document.getElementById('alert');
+    if (alertDiv) alertDiv.style.display = 'none'; 
   }
 
   // Enter key untuk login

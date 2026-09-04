@@ -3,65 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Absensi Terpadu</title>
+  <title>Sistem Absensi Terpadu & Dashboard</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- Library Export Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
     body { background-color: #f0f2f5; margin: 0; padding: 15px; display: flex; justify-content: center; }
-    .container { background: #fff; width: 100%; max-width: 650px; border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .container { background: #fff; width: 100%; max-width: 750px; border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
     h2, h3 { text-align: center; color: #1a73e8; margin-top: 0; }
     
-    /* Navigation Bar / Dashboard Grid */
-    .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-    .btn-menu { padding: 12px; border: none; background: #e8f0fe; color: #1967d2; font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center; font-size: 14px; transition: 0.2s; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 20px; }
+    .btn-menu { padding: 10px; border: none; background: #e8f0fe; color: #1967d2; font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center; font-size: 13px; }
     .btn-menu:hover, .btn-menu.active { background: #1a73e8; color: #fff; }
     
-    /* Forms & Inputs */
     .section { display: none; margin-top: 15px; }
     .section.active { display: block; }
     .form-group { margin-bottom: 12px; }
-    label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 14px; }
+    label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 13px; }
     input, select, button { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
+    
     .btn-primary { background: #1a73e8; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+    .btn-excel { background: #1d6f42; color: white; border: none; font-weight: bold; cursor: pointer; }
+    .btn-pdf { background: #d93025; color: white; border: none; font-weight: bold; cursor: pointer; }
     .btn-toggle { background: #34a853; color: white; border: none; font-weight: bold; cursor: pointer; }
     .btn-toggle.off { background: #ea4335; }
     
-    /* Scanner */
     #reader { width: 100%; border-radius: 8px; overflow: hidden; margin-top: 10px; min-height: 220px; background: #111; }
-    
-    /* Tables */
     .table-responsive { overflow-x: auto; margin-top: 15px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-    th, td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+    th, td { padding: 8px; border-bottom: 1px solid #ddd; }
     th { background-color: #f8f9fa; color: #333; }
     
-    /* Alert Status */
     #alert { margin-top: 15px; padding: 10px; border-radius: 6px; display: none; text-align: center; font-weight: bold; font-size: 14px; }
     .alert-success { background: #d4edda; color: #155724; }
     .alert-warning { background: #fff3cd; color: #856404; }
     .alert-danger { background: #f8d7da; color: #721c24; }
+
+    @media print {
+      body * { visibility: hidden; }
+      .printable, .printable * { visibility: visible; }
+      .printable { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>Sistem Absensi Sekolah</h2>
+  <h2 class="no-print">Sistem Absensi Sekolah</h2>
 
-  <!-- DASHBOARD / MENU UTAMA -->
-  <div class="menu-grid">
-    <button class="btn-menu active" onclick="switchMenu('scanner', this)">📷 Scanner QR</button>
-    <button class="btn-menu" onclick="switchMenu('cari', this)">🔍 Cek Kehadiran</button>
-    <button class="btn-menu" onclick="switchMenu('izin', this)">📝 Input Izin/Sakit</button>
-    <button class="btn-menu" onclick="switchMenu('rekap', this)">📊 Rekap Kehadiran</button>
+  <!-- MENU DASHBOARD -->
+  <div class="menu-grid no-print">
+    <button class="btn-menu active" onclick="switchMenu('scanner', this)">📷 Scanner</button>
+    <button class="btn-menu" onclick="switchMenu('cari', this)">🔍 Cek Data</button>
+    <button class="btn-menu" onclick="switchMenu('izin', this)">📝 Input Izin</button>
+    <button class="btn-menu" onclick="switchMenu('rekap', this)">📊 Rekap Data</button>
+    <button class="btn-menu" onclick="switchMenu('pengaturan', this)">⚙️ Pengaturan</button>
   </div>
 
-  <div id="alert"></div>
+  <div id="alert" class="no-print"></div>
 
-  <!-- MENU 1: SCANNER QR -->
+  <!-- 1. SCANNER QR -->
   <div id="menu-scanner" class="section active">
     <h3>Scanner QR Barcode</h3>
     <div class="form-group">
-      <label>Sesi Absen:</label>
+      <label>Pilih Sesi Absen:</label>
       <select id="sesiSelect">
         <option value="Sesi 1">Sesi 1 (Masuk Pagi)</option>
         <option value="Sesi 2">Sesi 2 (Siang/Kegiatan)</option>
@@ -79,124 +86,148 @@
     <div id="reader"></div>
   </div>
 
-  <!-- MENU 2: CEK KEHADIRAN SISWA -->
+  <!-- 2. CEK KEHADIRAN -->
   <div id="menu-cari" class="section">
-    <h3>Cek Kehadiran Siswa</h3>
+    <h3>Pencarian Data Kehadiran</h3>
     <div class="form-group">
-      <label>NISN / Nama Siswa:</label>
-      <input type="text" id="cariKeyword" placeholder="Ketik NISN atau Nama...">
+      <label>Peran:</label>
+      <select id="cariPeran">
+        <option value="ALL">Semua (Siswa & Guru)</option>
+        <option value="SISWA">Siswa</option>
+        <option value="GURU">Guru</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Kata Kunci (NISN / NIP / Nama):</label>
+      <input type="text" id="cariKeyword" placeholder="Ketik kata kunci...">
     </div>
     <div style="display:flex; gap:10px;">
-      <div class="form-group" style="flex:1;">
-        <label>Dari Tanggal:</label>
-        <input type="date" id="cariTglMulai">
-      </div>
-      <div class="form-group" style="flex:1;">
-        <label>Sampai Tanggal:</label>
-        <input type="date" id="cariTglSelesai">
-      </div>
+      <div class="form-group" style="flex:1;"><label>Dari Tanggal:</label><input type="date" id="cariTglMulai"></div>
+      <div class="form-group" style="flex:1;"><label>Sampai Tanggal:</label><input type="date" id="cariTglSelesai"></div>
     </div>
     <button class="btn-primary" onclick="cariKehadiran()">Cari Data</button>
-    
+
     <div class="table-responsive">
       <table>
-        <thead>
-          <tr>
-            <th>Waktu</th>
-            <th>ID</th>
-            <th>Nama</th>
-            <th>Sesi / Ket</th>
-          </tr>
-        </thead>
-        <tbody id="tableCariBody">
-          <tr><td colspan="4" style="text-align:center;">Silakan lakukan pencarian.</td></tr>
-        </tbody>
+        <thead><tr><th>Waktu</th><th>Peran</th><th>ID</th><th>Nama</th><th>Status/Sesi</th></tr></thead>
+        <tbody id="tableCariBody"><tr><td colspan="5" style="text-align:center;">Silakan lakukan pencarian.</td></tr></tbody>
       </table>
     </div>
   </div>
 
-  <!-- MENU 3: INPUT IZIN / SAKIT -->
+  <!-- 3. INPUT IZIN / SAKIT -->
   <div id="menu-izin" class="section">
     <h3>Input Izin / Sakit Manual</h3>
     <div class="form-group">
-      <label>NISN Siswa:</label>
-      <input type="text" id="izinNisn" placeholder="Masukkan 10 digit NISN">
+      <label>Peran:</label>
+      <select id="izinRole">
+        <option value="siswa">Siswa</option>
+        <option value="guru">Guru</option>
+      </select>
     </div>
     <div class="form-group">
-      <label>Tanggal:</label>
-      <input type="date" id="izinTanggal">
+      <label>ID (NISN / NIP):</label>
+      <input type="text" id="izinId" placeholder="Masukkan NISN atau NIP">
     </div>
+    <div class="form-group"><label>Tanggal:</label><input type="date" id="izinTanggal"></div>
     <div class="form-group">
       <label>Status:</label>
       <select id="izinStatus">
         <option value="Izin">Izin</option>
         <option value="Sakit">Sakit</option>
+        <option value="Alpa">Alpa</option>
       </select>
     </div>
-    <div class="form-group">
-      <label>Keterangan Alasan:</label>
-      <input type="text" id="izinKet" placeholder="Contoh: Demam / Acara Keluarga">
-    </div>
+    <div class="form-group"><label>Keterangan:</label><input type="text" id="izinKet" placeholder="Alasan..."></div>
     <button class="btn-primary" onclick="simpanIzin()">Simpan Data</button>
   </div>
 
-  <!-- MENU 4: REKAP KEHADIRAN -->
-  <div id="menu-rekap" class="section">
-    <h3>Rekap Kehadiran Siswa</h3>
-    <div class="form-group">
-      <label>Pilih Kelas:</label>
-      <select id="rekapKelas">
-        <option value="">-- Semua Kelas --</option>
-      </select>
-    </div>
-    <div style="display:flex; gap:10px;">
-      <div class="form-group" style="flex:1;">
-        <label>Dari Tanggal:</label>
-        <input type="date" id="rekapTglMulai">
+  <!-- 4. REKAP KEHADIRAN (EXPORT EXCEL & PDF) -->
+  <div id="menu-rekap" class="section printable">
+    <h3>Rekap Kehadiran</h3>
+    <div class="no-print">
+      <div class="form-group">
+        <label>Tipe Rekap:</label>
+        <select id="rekapRole" onchange="toggleRekapFilter()">
+          <option value="siswa">Rekap Siswa</option>
+          <option value="guru">Rekap Guru</option>
+        </select>
       </div>
-      <div class="form-group" style="flex:1;">
-        <label>Sampai Tanggal:</label>
-        <input type="date" id="rekapTglSelesai">
+      <div class="form-group" id="rekapKelasContainer">
+        <label>Kelas:</label>
+        <select id="rekapKelas"><option value="">-- Semua Kelas --</option></select>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div class="form-group" style="flex:1;"><label>Dari Tanggal:</label><input type="date" id="rekapTglMulai"></div>
+        <div class="form-group" style="flex:1;"><label>Sampai Tanggal:</label><input type="date" id="rekapTglSelesai"></div>
+      </div>
+      <button class="btn-primary" onclick="loadRekap()">Tampilkan Rekap</button>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn-excel" onclick="exportToExcel()">📊 Export Excel</button>
+        <button class="btn-pdf" onclick="window.print()">🖨️ Cetak / PDF</button>
       </div>
     </div>
-    <button class="btn-primary" onclick="loadRekap()">Tampilkan Rekap</button>
 
-    <div class="table-responsive">
-      <table>
+    <div class="table-responsive" style="margin-top:15px;">
+      <p id="labelTotalHari" style="font-weight:bold;"></p>
+      <table id="tableRekap">
         <thead>
           <tr>
+            <th>ID</th>
             <th>Nama</th>
-            <th>Kelas</th>
-            <th>Hadir</th>
+            <th>Unit/Kelas</th>
+            <th>TW</th>
+            <th>TL</th>
             <th>Izin</th>
             <th>Sakit</th>
+            <th>Alpa</th>
+            <th>Total Hadir</th>
+            <th>% Kehadiran</th>
           </tr>
         </thead>
         <tbody id="tableRekapBody">
-          <tr><td colspan="5" style="text-align:center;">Pilih filter dan klik Tampilkan.</td></tr>
+          <tr><td colspan="10" style="text-align:center;">Pilih filter dan klik Tampilkan.</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
+  <!-- 5. PENGATURAN SESI -->
+  <div id="menu-pengaturan" class="section">
+    <h3>Pengaturan Jam Sesi</h3>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Sesi</th>
+            <th>Mulai (TW)</th>
+            <th>Batas TW (TL)</th>
+            <th>Tutup Sesi</th>
+            <th>Absen Otomatis</th>
+          </tr>
+        </thead>
+        <tbody id="tablePengaturanBody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+    <button class="btn-primary" style="margin-top:15px;" onclick="savePengaturan()">Simpan Pengaturan</button>
+  </div>
+
 </div>
 
 <script>
-  // GANTI DENGAN URL APPS SCRIPT ANDA
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbz-CjMil3AbVHNOMMLvMK-9tVhn12_CQ1WfYQWYebXfVovHF0KgpfdRNxJ1N1KY1GUO/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwm-JufdFCKlLhYjs3bRXSLlsVUpO-RUl5jamr-mmt2UkAI01HlxHZuZnfxaRMzwbto/exec";
 
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
   let isCameraOn = false;
   let isProcessing = false;
 
-  // Set Tanggal Hari Ini secara Default
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('izinTanggal').value = today;
+  document.getElementById('izinTanggal').value = new Date().toISOString().split('T')[0];
 
   function switchMenu(menuName, btnEl) {
-    if (isCameraOn) stopCamera(); // Matikan kamera jika pindah menu
-    
+    if (isCameraOn) stopCamera();
     document.querySelectorAll('.btn-menu').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     
@@ -205,6 +236,7 @@
     hideAlert();
 
     if (menuName === 'rekap') loadOpsiKelas();
+    if (menuName === 'pengaturan') loadPengaturan();
   }
 
   function setRole(role) {
@@ -213,10 +245,13 @@
     document.getElementById('btnGuru').style.background = (role === 'guru') ? '#1a73e8' : '#6c757d';
   }
 
-  // --- LOGIKA SCANNER ---
-  function toggleCamera() {
-    if (isCameraOn) { stopCamera(); } else { startCamera(); }
+  function toggleRekapFilter() {
+    const r = document.getElementById('rekapRole').value;
+    document.getElementById('rekapKelasContainer').style.display = (r === 'siswa') ? 'block' : 'none';
   }
+
+  // --- SCANNER ---
+  function toggleCamera() { isCameraOn ? stopCamera() : startCamera(); }
 
   function startCamera() {
     html5QrcodeScanner = new Html5Qrcode("reader");
@@ -260,39 +295,31 @@
     });
   }
 
-  // --- LOGIKA INPUT IZIN / SAKIT ---
+  // --- INPUT IZIN ---
   function simpanIzin() {
-    const nisn = document.getElementById('izinNisn').value;
-    const tanggal = document.getElementById('izinTanggal').value;
-    const status = document.getElementById('izinStatus').value;
-    const keterangan = document.getElementById('izinKet').value;
-
-    if (!nisn || !tanggal) {
-      showAlert("danger", "NISN dan Tanggal wajib diisi!");
-      return;
-    }
+    const id = document.getElementById('izinId').value;
+    if (!id) return showAlert("danger", "ID/NISN/NIP wajib diisi!");
 
     showAlert("warning", "Menyimpan data...");
     sendRequest({
       action: 'input_izin',
-      nisn: nisn,
-      tanggal: tanggal,
-      status: status,
-      keterangan: keterangan
+      role: document.getElementById('izinRole').value,
+      id: id,
+      tanggal: document.getElementById('izinTanggal').value,
+      status: document.getElementById('izinStatus').value,
+      keterangan: document.getElementById('izinKet').value
     }, res => {
       showAlert(res.status, res.message);
-      if (res.status === 'success') {
-        document.getElementById('izinNisn').value = '';
-        document.getElementById('izinKet').value = '';
-      }
+      if (res.status === 'success') document.getElementById('izinId').value = '';
     });
   }
 
-  // --- LOGIKA CEK KEHADIRAN ---
+  // --- CARI KEHADIRAN ---
   function cariKehadiran() {
     showAlert("warning", "Mencari data...");
     sendRequest({
       action: 'cari_kehadiran',
+      peran: document.getElementById('cariPeran').value,
       keyword: document.getElementById('cariKeyword').value,
       tglMulai: document.getElementById('cariTglMulai').value,
       tglSelesai: document.getElementById('cariTglSelesai').value
@@ -300,33 +327,21 @@
       hideAlert();
       const tbody = document.getElementById('tableCariBody');
       tbody.innerHTML = '';
+      if (!res.data.length) return tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Data tidak ditemukan.</td></tr>';
 
-      if (res.data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Data tidak ditemukan.</td></tr>';
-        return;
-      }
-
-      res.data.forEach(row => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${row.timestamp}</td>
-            <td>${row.id}</td>
-            <td>${row.nama}</td>
-            <td>${row.sesi}</td>
-          </tr>`;
+      res.data.forEach(r => {
+        tbody.innerHTML += `<tr><td>${r.timestamp}</td><td>${r.peran}</td><td>${r.id}</td><td>${r.nama}</td><td>${r.sesi}</td></tr>`;
       });
     });
   }
 
-  // --- LOGIKA REKAP KEHADIRAN ---
+  // --- REKAP KEHADIRAN & EXPORT ---
   function loadOpsiKelas() {
     sendRequest({ action: 'get_kelas' }, res => {
       if (res.status === 'success') {
         const select = document.getElementById('rekapKelas');
         select.innerHTML = '<option value="">-- Semua Kelas --</option>';
-        res.data.forEach(k => {
-          select.innerHTML += `<option value="${k}">${k}</option>`;
-        });
+        res.data.forEach(k => select.innerHTML += `<option value="${k}">${k}</option>`);
       }
     });
   }
@@ -335,6 +350,7 @@
     showAlert("warning", "Menghitung rekap...");
     sendRequest({
       action: 'rekap_kehadiran',
+      role: document.getElementById('rekapRole').value,
       kelas: document.getElementById('rekapKelas').value,
       tglMulai: document.getElementById('rekapTglMulai').value,
       tglSelesai: document.getElementById('rekapTglSelesai').value
@@ -342,22 +358,73 @@
       hideAlert();
       const tbody = document.getElementById('tableRekapBody');
       tbody.innerHTML = '';
+      document.getElementById('labelTotalHari').innerText = `Total Hari Kerja/Masuk dalam Periode: ${res.totalHari} Hari`;
 
-      if (res.data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Data tidak ditemukan.</td></tr>';
-        return;
-      }
+      if (!res.data.length) return tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Data tidak ditemukan.</td></tr>';
 
       res.data.forEach(s => {
         tbody.innerHTML += `
           <tr>
+            <td>${s.id}</td>
             <td>${s.nama}</td>
-            <td>${s.kelas}</td>
-            <td><b>${s.hadir}</b></td>
+            <td>${s.unit}</td>
+            <td>${s.tw}</td>
+            <td>${s.tl}</td>
             <td>${s.izin}</td>
             <td>${s.sakit}</td>
+            <td>${s.alpa}</td>
+            <td><b>${s.totalHadir}</b></td>
+            <td><b>${s.persentase}%</b></td>
           </tr>`;
       });
+    });
+  }
+
+  function exportToExcel() {
+    const table = document.getElementById("tableRekap");
+    const wb = XLSX.utils.table_to_book(table, { sheet: "Rekap Kehadiran" });
+    XLSX.writeFile(wb, `Rekap_Kehadiran_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }
+
+  // --- PENGATURAN ---
+  function loadPengaturan() {
+    sendRequest({ action: 'get_pengaturan' }, res => {
+      const tbody = document.getElementById('tablePengaturanBody');
+      tbody.innerHTML = '';
+      res.data.forEach((p, idx) => {
+        tbody.innerHTML += `
+          <tr>
+            <td><b>${p.sesi}</b><input type="hidden" class="p-sesi" value="${p.sesi}"></td>
+            <td><input type="time" class="p-mulai" value="${p.mulai}"></td>
+            <td><input type="time" class="p-tw" value="${p.batasTW}"></td>
+            <td><input type="time" class="p-tutup" value="${p.tutup}"></td>
+            <td>
+              <select class="p-alpa">
+                <option value="Alpa" ${p.alpa === 'Alpa' ? 'selected' : ''}>Alpa</option>
+                <option value="Bolos" ${p.alpa === 'Bolos' ? 'selected' : ''}>Bolos</option>
+              </select>
+            </td>
+          </tr>`;
+      });
+    });
+  }
+
+  function savePengaturan() {
+    let config = [];
+    const rows = document.querySelectorAll('#tablePengaturanBody tr');
+    rows.forEach(r => {
+      config.push({
+        sesi: r.querySelector('.p-sesi').value,
+        mulai: r.querySelector('.p-mulai').value,
+        batasTW: r.querySelector('.p-tw').value,
+        tutup: r.querySelector('.p-tutup').value,
+        alpa: r.querySelector('.p-alpa').value
+      });
+    });
+
+    showAlert("warning", "Menyimpan pengaturan...");
+    sendRequest({ action: 'save_pengaturan', config: config }, res => {
+      showAlert(res.status, res.message);
     });
   }
 
@@ -383,9 +450,7 @@
     alertDiv.style.display = 'block';
   }
 
-  function hideAlert() {
-    document.getElementById('alert').style.display = 'none';
-  }
+  function hideAlert() { document.getElementById('alert').style.display = 'none'; }
 </script>
 
 </body>

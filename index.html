@@ -58,8 +58,8 @@
 </div>
 
 <script>
-  // TEMPELKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby350UBibsLv1xCMz5chY6uh4ShvVaX9O7VS6mWT7YvCoGXrXzp5MLf-hHWPmm2KVa9/exec";
+  // GANTI DENGAN URL WEB APP GOOGLE SCRIPT ANDA
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyuKXcazaTcvvigoQ-q1vQvSGdOx_8UJDOffEH5ZMOGuB7FZ80uabfogdF5wHDpa0oO/exec";
 
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
@@ -111,28 +111,37 @@
   }
 
   function onScanSuccess(decodedText) {
-    if (isProcessing) return; // Mencegah multiple submit cepat
+    if (isProcessing) return; 
     isProcessing = true;
 
     const sesi = document.getElementById('sesiSelect').value;
     showAlert("warning", "Memproses absensi...");
 
+    // Pengiriman data menggunakan text/plain agar bisa dibaca Apps Script tanpa terbentur CORS
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
-      mode: "no-cors", // Penting untuk bypass CORS Google Apps Script
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
         role: currentRole,
         code: decodedText,
         sesi: sesi
       })
     })
-    .then(() => {
-      showAlert("success", `QR Code [${decodedText}] berhasil diproses!`);
-      setTimeout(() => { isProcessing = false; }, 3000); // Debounce 3 detik
+    .then(response => response.json())
+    .then(res => {
+      if (res.status === "success") {
+        showAlert("success", res.message);
+      } else if (res.status === "warning") {
+        showAlert("warning", res.message);
+      } else {
+        showAlert("danger", res.message);
+      }
+      
+      // Jeda 3 detik sebelum diperbolehkan scan lagi
+      setTimeout(() => { isProcessing = false; }, 3000);
     })
     .catch(error => {
-      showAlert("danger", "Terjadi kesalahan jaringan.");
+      showAlert("danger", "Gagal terhubung ke server.");
       isProcessing = false;
     });
   }

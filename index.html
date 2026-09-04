@@ -2,11 +2,10 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sistem Absensi Online</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <style>
-        <style>
         * {
             margin: 0;
             padding: 0;
@@ -14,19 +13,19 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 15px;
         }
         
         .container {
             background: white;
             border-radius: 20px;
-            padding: 30px;
+            padding: 25px;
             max-width: 500px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
@@ -36,7 +35,7 @@
             text-align: center;
             color: #333;
             margin-bottom: 20px;
-            font-size: 28px;
+            font-size: 26px;
         }
         
         h1 span {
@@ -61,6 +60,7 @@
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s;
+            font-size: 16px;
         }
         
         .role-btn.active {
@@ -68,8 +68,8 @@
             color: white;
         }
         
-        .role-btn:hover {
-            transform: scale(1.02);
+        .role-btn:active {
+            transform: scale(0.95);
         }
         
         .scanner-container {
@@ -79,12 +79,13 @@
             background: #000;
             border-radius: 10px;
             overflow: hidden;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         #scanner {
             width: 100%;
             height: 100%;
+            background: #1a1a1a;
         }
         
         .scanner-overlay {
@@ -136,8 +137,26 @@
             100% { top: 100%; }
         }
         
+        .status-text {
+            text-align: center;
+            color: #666;
+            margin: 10px 0;
+            font-size: 14px;
+            min-height: 24px;
+        }
+        
+        .status-text .loading {
+            color: #667eea;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
         .result-box {
-            margin-top: 20px;
+            margin-top: 15px;
             padding: 20px;
             border-radius: 10px;
             background: #f8f9fa;
@@ -173,10 +192,11 @@
         .result-box h3 {
             margin-bottom: 10px;
             color: #333;
+            font-size: 18px;
         }
         
         .result-box .info-item {
-            padding: 5px 0;
+            padding: 8px 0;
             display: flex;
             justify-content: space-between;
             border-bottom: 1px solid rgba(0,0,0,0.05);
@@ -189,15 +209,18 @@
         .result-box .label {
             font-weight: bold;
             color: #666;
+            font-size: 14px;
         }
         
         .result-box .value {
             color: #333;
+            font-size: 14px;
+            word-break: break-all;
         }
         
         .btn-absen {
             width: 100%;
-            padding: 15px;
+            padding: 14px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
@@ -209,19 +232,17 @@
             margin-top: 15px;
         }
         
-        .btn-absen:hover {
-            transform: scale(1.02);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        .btn-absen:active {
+            transform: scale(0.97);
         }
         
         .btn-absen:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
         
         .manual-input {
-            margin-top: 20px;
+            margin-top: 15px;
             padding: 15px;
             background: #f1f3f5;
             border-radius: 10px;
@@ -230,6 +251,7 @@
         .manual-input h4 {
             margin-bottom: 10px;
             color: #666;
+            font-size: 14px;
         }
         
         .manual-input input {
@@ -258,58 +280,54 @@
             transition: all 0.3s;
         }
         
-        .manual-input button:hover {
-            background: #5a6268;
+        .manual-input button:active {
+            transform: scale(0.97);
         }
         
-        .status-text {
-            text-align: center;
-            color: #666;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-        
-        .status-text .loading {
-            color: #667eea;
-            animation: blink 1s infinite;
-        }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+        .debug-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: #fff3cd;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #856404;
+            display: none;
+            word-break: break-all;
+            max-height: 150px;
+            overflow-y: auto;
         }
         
         @media (max-width: 480px) {
             .container {
-                padding: 20px;
+                padding: 15px;
             }
             h1 {
                 font-size: 22px;
+            }
+            .role-btn {
+                font-size: 14px;
+                padding: 10px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="app">
         <h1>📋 <span>Absensi Online</span></h1>
         
-        <!-- Role Selector -->
         <div class="role-selector">
             <button class="role-btn active" data-role="siswa" onclick="setRole('siswa')">🎓 Siswa</button>
             <button class="role-btn" data-role="guru" onclick="setRole('guru')">👨‍🏫 Guru</button>
         </div>
         
-        <!-- Scanner -->
         <div class="scanner-container">
             <div id="scanner"></div>
             <div class="scanner-overlay"></div>
             <div class="scan-line"></div>
         </div>
         
-        <!-- Status -->
-        <p class="status-text" id="statusText">🔄 Menyiapkan kamera...</p>
+        <p class="status-text" id="statusText">🔄 Menyiapkan...</p>
         
-        <!-- Result Box -->
         <div class="result-box" id="resultBox">
             <h3 id="resultTitle">✅ Data Ditemukan</h3>
             <div id="resultContent"></div>
@@ -318,26 +336,46 @@
             </button>
         </div>
         
-        <!-- Manual Input -->
         <div class="manual-input">
             <h4>⌨️ Input Manual</h4>
             <input type="text" id="manualCode" placeholder="Masukkan NISN/NIP..." maxlength="18">
             <button onclick="cekManual()">🔍 Cek Data</button>
         </div>
+        
+        <div class="debug-info" id="debugInfo"></div>
     </div>
+
     <script>
         // ==================== KONFIGURASI ====================
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzqjJyibw4l-Q0dv3PQjeCkW5tu2Hlad6QnwhuOMjjadm0SiIT19_GohF7P0bwTK3Q1mg/exec';
+        // Ganti dengan URL Web App Anda
+        const API_URL = 'https://script.google.com/macros/s/AKfycby70_xFztDlGOiJdhyY8B2P8jSvoXd8IeTkcnjWl6oAs3U5ZmI4FLjvjw8TywHMF-NTIQ/exec';
         
+        // ==================== VARIABEL GLOBAL ====================
         let currentRole = 'siswa';
         let scannedData = null;
         let isScanning = false;
-        let lastScannedCode = ''; // Untuk mencegah double scan
+        let lastScannedCode = '';
         let scanTimeout = null;
+        let quaggaInitialized = false;
+        
+        // ==================== DEBUG ====================
+        function debugLog(message, data = null) {
+            console.log('[DEBUG]', message, data);
+            const debugEl = document.getElementById('debugInfo');
+            if (debugEl) {
+                debugEl.style.display = 'block';
+                const timestamp = new Date().toLocaleTimeString();
+                const logMessage = data ? `${message}: ${JSON.stringify(data)}` : message;
+                debugEl.innerHTML += `<div>[${timestamp}] ${logMessage}</div>`;
+                debugEl.scrollTop = debugEl.scrollHeight;
+            }
+        }
         
         // ==================== SET ROLE ====================
         function setRole(role) {
+            debugLog('Set role:', role);
             currentRole = role;
+            
             document.querySelectorAll('.role-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.role === role);
             });
@@ -349,119 +387,140 @@
             
             if (isScanning) {
                 stopScanner();
-                setTimeout(startScanner, 500);
+                setTimeout(() => startScanner(), 500);
             }
         }
         
         // ==================== START SCANNER ====================
         function startScanner() {
+            debugLog('Starting scanner...');
+            
+            if (quaggaInitialized) {
+                debugLog('Scanner already initialized, stopping first');
+                stopScanner();
+            }
+            
             isScanning = true;
             document.getElementById('statusText').innerHTML = '📷 Menyiapkan kamera...';
             
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#scanner'),
-                    constraints: {
-                        facingMode: "environment",
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    }
-                },
-                decoder: {
-                    readers: [
-                        "code_128_reader",
-                        "ean_reader",
-                        "ean_8_reader",
-                        "code_39_reader",
-                        "code_93_reader",
-                        "codabar_reader",
-                        "upc_reader",
-                        "upc_e_reader",
-                        "i2of5_reader",
-                        "2of5_reader"
-                    ],
-                    debug: {
-                        showCanvas: false,
-                        showPatches: false,
-                        showFoundPatches: false,
-                        showSkeleton: false,
-                        showLabels: false,
-                        showPatchLabels: false,
-                        showRemainingPatchLabels: false,
-                        boxFromPatches: {
-                            showTransformed: false,
-                            showTransformedBox: false,
-                            showBB: false
-                        }
-                    }
-                },
-                locate: {
-                    patchSize: "medium",
-                    halfSample: true
-                }
-            }, function(err) {
-                if (err) {
-                    document.getElementById('statusText').innerHTML = '❌ Gagal mengakses kamera: ' + err;
-                    console.error(err);
-                    return;
-                }
-                Quagga.start();
-                document.getElementById('statusText').innerHTML = '📸 Arahkan kamera ke barcode';
-            });
+            // Cek dukungan kamera
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                document.getElementById('statusText').innerHTML = '❌ Browser tidak mendukung kamera';
+                debugLog('Browser tidak mendukung getUserMedia');
+                return;
+            }
             
-            // Event handler untuk deteksi barcode
-            Quagga.onDetected(function(data) {
-                const rawCode = data.codeResult.code;
+            const targetElement = document.querySelector('#scanner');
+            if (!targetElement) {
+                debugLog('Element #scanner tidak ditemukan');
+                return;
+            }
+            
+            try {
+                Quagga.init({
+                    inputStream: {
+                        name: "Live",
+                        type: "LiveStream",
+                        target: targetElement,
+                        constraints: {
+                            facingMode: "environment",
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        }
+                    },
+                    decoder: {
+                        readers: [
+                            "code_128_reader",
+                            "ean_reader",
+                            "ean_8_reader",
+                            "code_39_reader",
+                            "code_93_reader",
+                            "codabar_reader",
+                            "upc_reader",
+                            "upc_e_reader",
+                            "i2of5_reader",
+                            "2of5_reader"
+                        ]
+                    },
+                    locate: {
+                        patchSize: "medium",
+                        halfSample: true
+                    }
+                }, function(err) {
+                    if (err) {
+                        debugLog('Quagga init error:', err);
+                        document.getElementById('statusText').innerHTML = '❌ Gagal akses kamera: ' + err.message;
+                        isScanning = false;
+                        return;
+                    }
+                    
+                    debugLog('Quagga initialized successfully');
+                    quaggaInitialized = true;
+                    Quagga.start();
+                    document.getElementById('statusText').innerHTML = '📸 Arahkan kamera ke barcode';
+                    debugLog('Scanner started');
+                });
                 
-                // === PENTING: Proses kode untuk mempertahankan leading zeros ===
-                const processedCode = processBarcodeCode(rawCode);
+                // Event handler untuk deteksi
+                Quagga.onDetected(function(data) {
+                    debugLog('Barcode detected:', data);
+                    const rawCode = data.codeResult.code;
+                    debugLog('Raw code:', rawCode);
+                    
+                    const processedCode = processBarcodeCode(rawCode);
+                    debugLog('Processed code:', processedCode);
+                    
+                    if (processedCode === lastScannedCode) {
+                        debugLog('Duplicate scan ignored');
+                        return;
+                    }
+                    
+                    lastScannedCode = processedCode;
+                    
+                    if (scanTimeout) {
+                        clearTimeout(scanTimeout);
+                    }
+                    
+                    handleBarcodeDetected(processedCode);
+                    
+                    scanTimeout = setTimeout(() => {
+                        lastScannedCode = '';
+                    }, 3000);
+                });
                 
-                // Cegah double scan dalam waktu dekat
-                if (processedCode === lastScannedCode) {
-                    return;
-                }
+                // Error handler
+                Quagga.onProcessed(function(result) {
+                    // Optional: handle processing
+                });
                 
-                lastScannedCode = processedCode;
-                
-                // Hapus timeout sebelumnya
-                if (scanTimeout) {
-                    clearTimeout(scanTimeout);
-                }
-                
-                // Handle barcode
-                handleBarcodeDetected(processedCode);
-                
-                // Reset setelah 3 detik untuk memungkinkan scan ulang
-                scanTimeout = setTimeout(() => {
-                    lastScannedCode = '';
-                }, 3000);
-            });
+            } catch (error) {
+                debugLog('Error starting scanner:', error);
+                document.getElementById('statusText').innerHTML = '❌ Error: ' + error.message;
+                isScanning = false;
+            }
         }
         
-        // ==================== FUNGSI PROSES BARCODE ====================
+        // ==================== PROSES BARCODE ====================
         function processBarcodeCode(rawCode) {
-            // Jika kode kosong
             if (!rawCode) return '';
             
             // Hapus karakter non-digit
             let cleanCode = rawCode.replace(/\D/g, '');
+            debugLog('Clean code:', cleanCode);
             
-            // === FIX UNTUK LEADING ZEROS ===
-            // Jika panjang kurang dari yang diharapkan, tambahkan leading zeros
             const expectedLength = currentRole === 'siswa' ? 10 : 18;
             
+            // Jika panjang kurang, tambahkan leading zeros
             if (cleanCode.length < expectedLength) {
-                // Cek apakah barcode memiliki leading zeros yang hilang
-                // Contoh: "897567812" seharusnya "0897567812"
                 const missingZeros = expectedLength - cleanCode.length;
                 cleanCode = '0'.repeat(missingZeros) + cleanCode;
+                debugLog('Added leading zeros:', cleanCode);
             }
             
-            // Jika masih terlalu panjang, ambil dari belakang
+            // Jika terlalu panjang, ambil dari belakang
             if (cleanCode.length > expectedLength) {
                 cleanCode = cleanCode.slice(-expectedLength);
+                debugLog('Trimmed to length:', cleanCode);
             }
             
             return cleanCode;
@@ -469,51 +528,65 @@
         
         // ==================== STOP SCANNER ====================
         function stopScanner() {
+            debugLog('Stopping scanner...');
             isScanning = false;
             try {
-                Quagga.stop();
+                if (quaggaInitialized) {
+                    Quagga.stop();
+                    Quagga.offDetected();
+                    quaggaInitialized = false;
+                }
             } catch (e) {
-                console.log('Scanner already stopped');
+                debugLog('Error stopping scanner:', e);
             }
         }
         
         // ==================== HANDLE BARCODE ====================
         function handleBarcodeDetected(code) {
-            // Pause scanner sebentar
-            Quagga.pause();
+            debugLog('Handle barcode:', code);
             
-            // Validasi panjang
+            // Pause scanner
+            try {
+                Quagga.pause();
+            } catch (e) {
+                debugLog('Error pausing scanner:', e);
+            }
+            
+            // Validasi
             if (currentRole === 'siswa') {
                 if (code.length !== 10) {
                     showResult(false, '❌ NISN harus 10 digit', 
-                        `Panjang NISN: ${code.length} digit (${code})`);
+                        `Panjang: ${code.length} digit\nKode: ${code}`);
                     document.getElementById('statusText').innerHTML = '❌ NISN harus 10 digit';
                     setTimeout(() => {
-                        if (isScanning) Quagga.resume();
-                    }, 2000);
+                        if (isScanning) {
+                            try { Quagga.resume(); } catch(e) {}
+                        }
+                    }, 2500);
                     return;
                 }
                 
-                // Validasi apakah semua digit
                 if (!/^\d{10}$/.test(code)) {
                     showResult(false, '❌ NISN harus angka', 
                         `Format tidak valid: ${code}`);
                     document.getElementById('statusText').innerHTML = '❌ Format NISN tidak valid';
                     setTimeout(() => {
-                        if (isScanning) Quagga.resume();
-                    }, 2000);
+                        if (isScanning) {
+                            try { Quagga.resume(); } catch(e) {}
+                        }
+                    }, 2500);
                     return;
                 }
-            }
-            
-            if (currentRole === 'guru') {
+            } else {
                 if (code.length !== 18) {
                     showResult(false, '❌ NIP harus 18 digit', 
-                        `Panjang NIP: ${code.length} digit (${code})`);
+                        `Panjang: ${code.length} digit\nKode: ${code}`);
                     document.getElementById('statusText').innerHTML = '❌ NIP harus 18 digit';
                     setTimeout(() => {
-                        if (isScanning) Quagga.resume();
-                    }, 2000);
+                        if (isScanning) {
+                            try { Quagga.resume(); } catch(e) {}
+                        }
+                    }, 2500);
                     return;
                 }
                 
@@ -522,51 +595,48 @@
                         `Format tidak valid: ${code}`);
                     document.getElementById('statusText').innerHTML = '❌ Format NIP tidak valid';
                     setTimeout(() => {
-                        if (isScanning) Quagga.resume();
-                    }, 2000);
+                        if (isScanning) {
+                            try { Quagga.resume(); } catch(e) {}
+                        }
+                    }, 2500);
                     return;
                 }
             }
             
-            // Tampilkan kode yang terbaca
-            document.getElementById('statusText').innerHTML = `📌 Kode terbaca: ${code}`;
-            
-            // Cek data
+            document.getElementById('statusText').innerHTML = `📌 Kode: ${code}`;
             cekData(code);
             
-            // Resume scanner setelah 3 detik
             setTimeout(() => {
                 if (isScanning) {
-                    Quagga.resume();
+                    try { Quagga.resume(); } catch(e) {}
                 }
             }, 3000);
         }
         
         // ==================== CEK DATA ====================
         function cekData(code) {
+            debugLog('Cek data:', code);
             document.getElementById('statusText').innerHTML = '⏳ Memeriksa data...';
             
             const endpoint = currentRole === 'siswa' ? 'cekSiswa' : 'cekGuru';
             const param = currentRole === 'siswa' ? 'nisn' : 'nip';
             
-            // URL dengan parameter
             const url = `${API_URL}?action=${endpoint}&${param}=${encodeURIComponent(code)}`;
+            debugLog('Fetching URL:', url);
             
             fetch(url)
                 .then(response => {
+                    debugLog('Response status:', response.status);
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        throw new Error(`HTTP ${response.status}`);
                     }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Response data:', data); // Debug
+                    debugLog('Response data:', data);
                     
                     if (data.status === 'found') {
-                        scannedData = {
-                            code: code,
-                            data: data
-                        };
+                        scannedData = { code: code, data: data };
                         showResult(true, '✅ Data Ditemukan', data);
                         document.getElementById('statusText').innerHTML = '✅ Siap absen';
                     } else {
@@ -577,9 +647,9 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Fetch error:', error);
+                    debugLog('Fetch error:', error);
                     showResult(false, '❌ Error Koneksi', 
-                        'Gagal terhubung ke server. Periksa koneksi internet.');
+                        'Gagal terhubung ke server.\nPeriksa koneksi internet dan URL API.');
                     document.getElementById('statusText').innerHTML = '❌ Error koneksi';
                     scannedData = null;
                 });
@@ -587,6 +657,8 @@
         
         // ==================== SHOW RESULT ====================
         function showResult(success, title, content) {
+            debugLog('Show result:', { success, title, content });
+            
             const box = document.getElementById('resultBox');
             const titleEl = document.getElementById('resultTitle');
             const contentEl = document.getElementById('resultContent');
@@ -597,7 +669,6 @@
             if (success && content.data) {
                 const data = content.data;
                 let html = '';
-                // Tampilkan data yang ditemukan
                 const displayFields = ['nisn', 'nip', 'nama', 'kelas', 'jurusan', 'mapel'];
                 for (const [key, value] of Object.entries(data)) {
                     if (key !== 'status' && displayFields.includes(key)) {
@@ -611,7 +682,8 @@
                 contentEl.innerHTML = html;
                 document.getElementById('btnAbsen').style.display = 'block';
             } else {
-                contentEl.innerHTML = `<p style="color:#666; text-align:center;">${content}</p>`;
+                const message = typeof content === 'string' ? content : JSON.stringify(content);
+                contentEl.innerHTML = `<p style="color:#666; text-align:center; white-space:pre-line;">${message}</p>`;
                 document.getElementById('btnAbsen').style.display = 'none';
             }
         }
@@ -632,11 +704,12 @@
             const code = scannedData.code;
             
             const url = `${API_URL}?action=${endpoint}&${param}=${encodeURIComponent(code)}`;
+            debugLog('Absen URL:', url);
             
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Absen response:', data);
+                    debugLog('Absen response:', data);
                     
                     if (data.status === 'success') {
                         showResult(true, '✅ Absen Berhasil!', {
@@ -649,11 +722,9 @@
                         document.getElementById('statusText').innerHTML = '✅ Absen berhasil!';
                         scannedData = null;
                         
-                        // Reset button
                         btn.disabled = false;
                         btn.textContent = '✅ Absen Sekarang';
                         
-                        // Sembunyikan tombol setelah berhasil
                         setTimeout(() => {
                             document.getElementById('btnAbsen').style.display = 'none';
                         }, 3000);
@@ -665,9 +736,9 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    debugLog('Absen error:', error);
                     showResult(false, '❌ Error Koneksi', 
-                        'Gagal terhubung ke server. Periksa koneksi internet.');
+                        'Gagal terhubung ke server.\nPeriksa koneksi internet.');
                     document.getElementById('statusText').innerHTML = '❌ Error koneksi';
                     btn.disabled = false;
                     btn.textContent = '✅ Absen Sekarang';
@@ -682,37 +753,45 @@
                 return;
             }
             
-            // Bersihkan input
             let cleanCode = code.replace(/\D/g, '');
             
             if (currentRole === 'siswa') {
                 if (cleanCode.length !== 10) {
-                    alert(`NISN harus 10 digit! (Saat ini: ${cleanCode.length} digit)`);
+                    alert(`NISN harus 10 digit! (${cleanCode.length} digit)`);
                     return;
                 }
             } else {
                 if (cleanCode.length !== 18) {
-                    alert(`NIP harus 18 digit! (Saat ini: ${cleanCode.length} digit)`);
+                    alert(`NIP harus 18 digit! (${cleanCode.length} digit)`);
                     return;
                 }
             }
             
-            // Tampilkan di status
-            document.getElementById('statusText').innerHTML = `📌 Input manual: ${cleanCode}`;
-            
+            document.getElementById('statusText').innerHTML = `📌 Input: ${cleanCode}`;
             cekData(cleanCode);
         }
         
         // ==================== INIT ====================
         window.onload = function() {
+            debugLog('=== APP STARTED ===');
+            debugLog('API_URL:', API_URL);
+            debugLog('Browser:', navigator.userAgent);
+            
+            // Set initial role
+            setRole('siswa');
+            
             // Cek dukungan kamera
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                debugLog('Camera supported');
+            } else {
+                debugLog('Camera NOT supported');
                 document.getElementById('statusText').innerHTML = '❌ Browser tidak mendukung kamera';
-                alert('Browser Anda tidak mendukung akses kamera. Gunakan Chrome atau Firefox terbaru.');
-                return;
             }
             
-            startScanner();
+            // Start scanner after a short delay
+            setTimeout(() => {
+                startScanner();
+            }, 1000);
             
             // Enter key untuk input manual
             document.getElementById('manualCode').addEventListener('keypress', function(e) {
@@ -721,21 +800,22 @@
                 }
             });
             
-            // Auto format input manual (hanya angka)
+            // Auto format input manual
             document.getElementById('manualCode').addEventListener('input', function(e) {
                 this.value = this.value.replace(/\D/g, '');
             });
+            
+            debugLog('=== APP READY ===');
         };
         
-        // Cleanup saat page ditutup
+        // Cleanup
         window.onbeforeunload = function() {
             stopScanner();
         };
         
-        // Handle error jika scanner crash
         window.addEventListener('error', function(e) {
-            console.error('Global error:', e);
-            document.getElementById('statusText').innerHTML = '❌ Terjadi error, refresh halaman';
+            debugLog('Global error:', e.message);
+            document.getElementById('statusText').innerHTML = '❌ Error: ' + e.message;
         });
     </script>
 </body>

@@ -6,12 +6,325 @@
     <title>Sistem Absensi Online</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <style>
-        /* ... (style sama seperti sebelumnya) ... */
+        <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        h1 span {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .role-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .role-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .role-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        #scanner {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            pointer-events: none;
+        }
+        
+        .scanner-overlay::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            width: 30px;
+            height: 30px;
+            border-top: 4px solid #00ff88;
+            border-left: 4px solid #00ff88;
+        }
+        
+        .scanner-overlay::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 30px;
+            height: 30px;
+            border-bottom: 4px solid #00ff88;
+            border-right: 4px solid #00ff88;
+        }
+        
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+            animation: scan 2s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            display: none;
+        }
+        
+        .result-box.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-box.success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+        
+        .result-box.error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+        
+        .result-box h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .result-box .info-item {
+            padding: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .result-box .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-box .label {
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .result-box .value {
+            color: #333;
+        }
+        
+        .btn-absen {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+        
+        .btn-absen:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-absen:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .manual-input {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f1f3f5;
+            border-radius: 10px;
+        }
+        
+        .manual-input h4 {
+            margin-bottom: 10px;
+            color: #666;
+        }
+        
+        .manual-input input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .manual-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .manual-input button {
+            width: 100%;
+            padding: 12px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .manual-input button:hover {
+            background: #5a6268;
+        }
+        
+        .status-text {
+            text-align: center;
+            color: #666;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .status-text .loading {
+            color: #667eea;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 22px;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- ... (HTML sama seperti sebelumnya) ... -->
-
+    <div class="container">
+        <h1>📋 <span>Absensi Online</span></h1>
+        
+        <!-- Role Selector -->
+        <div class="role-selector">
+            <button class="role-btn active" data-role="siswa" onclick="setRole('siswa')">🎓 Siswa</button>
+            <button class="role-btn" data-role="guru" onclick="setRole('guru')">👨‍🏫 Guru</button>
+        </div>
+        
+        <!-- Scanner -->
+        <div class="scanner-container">
+            <div id="scanner"></div>
+            <div class="scanner-overlay"></div>
+            <div class="scan-line"></div>
+        </div>
+        
+        <!-- Status -->
+        <p class="status-text" id="statusText">🔄 Menyiapkan kamera...</p>
+        
+        <!-- Result Box -->
+        <div class="result-box" id="resultBox">
+            <h3 id="resultTitle">✅ Data Ditemukan</h3>
+            <div id="resultContent"></div>
+            <button class="btn-absen" id="btnAbsen" onclick="prosesAbsen()">
+                ✅ Absen Sekarang
+            </button>
+        </div>
+        
+        <!-- Manual Input -->
+        <div class="manual-input">
+            <h4>⌨️ Input Manual</h4>
+            <input type="text" id="manualCode" placeholder="Masukkan NISN/NIP..." maxlength="18">
+            <button onclick="cekManual()">🔍 Cek Data</button>
+        </div>
+    </div>
     <script>
         // ==================== KONFIGURASI ====================
         const API_URL = 'https://script.google.com/macros/s/AKfycbzqjJyibw4l-Q0dv3PQjeCkW5tu2Hlad6QnwhuOMjjadm0SiIT19_GohF7P0bwTK3Q1mg/exec';

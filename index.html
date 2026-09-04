@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistem Absensi Terpadu & Dashboard</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- Library Export Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
@@ -57,6 +58,7 @@
 </head>
 <body>
 
+<!-- MODAL LOGIN PIN -->
 <div id="loginModal" style="display:none;">
   <div class="modal-content">
     <h3>Autentikasi PIN</h3>
@@ -76,6 +78,7 @@
   </div>
   <hr class="no-print" style="margin: 15px 0;">
 
+  <!-- MENU DASHBOARD -->
   <div class="menu-grid no-print">
     <button class="btn-menu locked" id="menuBtn-scanner" onclick="checkMenuAccess('scanner', this)">📷 Scanner</button>
     <button class="btn-menu active" id="menuBtn-cari" onclick="switchMenu('cari', this)">🔍 Cek Data</button>
@@ -86,6 +89,7 @@
 
   <div id="alert" class="no-print"></div>
 
+  <!-- 1. SCANNER QR -->
   <div id="menu-scanner" class="section">
     <h3>Scanner QR Barcode</h3>
     <div class="form-group">
@@ -98,7 +102,7 @@
     </div>
     <div class="form-group">
       <label>Peran:</label>
-      <div style="display:flex; gap:10px;">
+      <div style="display:flex; gap:10px;" id="roleButtonContainer">
         <button type="button" id="btnSiswa" class="btn-primary" onclick="setRole('siswa')">Siswa</button>
         <button type="button" id="btnGuru" style="background:#6c757d; color:white; border:none;" onclick="setRole('guru')">Guru</button>
       </div>
@@ -107,6 +111,7 @@
     <div id="reader"></div>
   </div>
 
+  <!-- 2. CEK KEHADIRAN -->
   <div id="menu-cari" class="section active">
     <h3>Pencarian Data Kehadiran</h3>
     <div class="form-group">
@@ -135,6 +140,7 @@
     </div>
   </div>
 
+  <!-- 3. INPUT IZIN / SAKIT -->
   <div id="menu-izin" class="section">
     <h3>Input Izin / Sakit Manual</h3>
     <div class="form-group">
@@ -161,6 +167,7 @@
     <button class="btn-primary" onclick="simpanIzin()">Simpan Data</button>
   </div>
 
+  <!-- 4. REKAP KEHADIRAN -->
   <div id="menu-rekap" class="section printable">
     <h3>Rekap Kehadiran</h3>
     <div class="no-print">
@@ -210,6 +217,7 @@
     </div>
   </div>
 
+  <!-- 5. PENGATURAN SESI & HARI LIBUR -->
   <div id="menu-pengaturan" class="section">
     <h3>Pengaturan Jam Sesi</h3>
     <div class="table-responsive">
@@ -249,7 +257,7 @@
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyfYEX07xtYd0vm05KQ1gH-aA7lq1op-f6GXW0hwCmDwsBE04uF4CT6kcryPszYu3YR/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxhALoX7has0eraiWn6P3_p-_LAWRazh0SHLJlELuR3dSWv9d6I5ocvt6mN8JePf67X/exec";
 
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
@@ -260,24 +268,21 @@
 
   document.getElementById('izinTanggal').value = new Date().toISOString().split('T')[0];
 
-  // --- SISTEM LOGIN & OTORISASI PIN ---
   function checkMenuAccess(menuName, btnEl) {
     if (menuName === 'cari') {
       switchMenu(menuName, btnEl);
       return;
     }
 
-    // Jika sudah login sebagai admin atau guru yang sesuai hak aksesnya
     if (userSession === 'admin' || (userSession === 'guru' && menuName !== 'pengaturan') || userSession === 'pengaturan') {
       switchMenu(menuName, btnEl);
       return;
     }
 
-    // Jika belum login, munculkan modal PIN
     pendingMenu = { name: menuName, el: btnEl };
     document.getElementById('inputPinModal').value = '';
     document.getElementById('modalInfo').innerText = (menuName === 'pengaturan') ? 
-      "Masukkan PIN khusus (6 digit admin / pengaturan) untuk akses Menu Pengaturan." : 
+      "Masukkan PIN Pengaturan untuk akses menu ini." : 
       "Masukkan PIN Guru (4 digit) atau PIN Admin (6 digit).";
     document.getElementById('loginModal').style.display = 'flex';
   }
@@ -295,7 +300,7 @@
       if (res.status === 'success') {
         userSession = res.role;
         closeModal();
-        unlockMenusByRole(userSession);
+        applyRoleAccessUI(userSession);
         if (pendingMenu) {
           switchMenu(pendingMenu.name, pendingMenu.el);
           pendingMenu = '';
@@ -306,21 +311,30 @@
     });
   }
 
-  function unlockMenusByRole(role) {
+  function applyRoleAccessUI(role) {
     const badge = document.getElementById('userRoleBadge');
+    const btnGuruElem = document.getElementById('btnGuru');
+
     if (role === 'guru') {
       badge.innerText = "Status: Guru (Akses Terbatas)";
       document.getElementById('menuBtn-scanner').classList.remove('locked');
       document.getElementById('menuBtn-izin').classList.remove('locked');
       document.getElementById('menuBtn-rekap').classList.remove('locked');
+      
+      // Kunci tombol pilih peran Guru di scanner khusus untuk Admin
+      if (btnGuruElem) btnGuruElem.style.display = 'none';
+      setRole('siswa');
     } else if (role === 'admin') {
       badge.innerText = "Status: Admin Sekolah";
       document.getElementById('menuBtn-scanner').classList.remove('locked');
       document.getElementById('menuBtn-izin').classList.remove('locked');
       document.getElementById('menuBtn-rekap').classList.remove('locked');
+      
+      if (btnGuruElem) btnGuruElem.style.display = 'block';
     } else if (role === 'pengaturan') {
       badge.innerText = "Status: Super Admin (Pengaturan)";
       document.querySelectorAll('.menu-grid button').forEach(b => b.classList.remove('locked'));
+      if (btnGuruElem) btnGuruElem.style.display = 'block';
     }
   }
 
@@ -343,7 +357,8 @@
   function setRole(role) {
     currentRole = role;
     document.getElementById('btnSiswa').style.background = (role === 'siswa') ? '#1a73e8' : '#6c757d';
-    document.getElementById('btnGuru').style.background = (role === 'guru') ? '#1a73e8' : '#6c757d';
+    const btnGuru = document.getElementById('btnGuru');
+    if (btnGuru) btnGuru.style.background = (role === 'guru') ? '#1a73e8' : '#6c757d';
   }
 
   function toggleRekapFilter() {

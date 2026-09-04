@@ -1,1063 +1,149 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistem Absensi Online</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <style>
-        /* ====== STYLE LENGKAP ====== */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 15px;
-        }
-        
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-height: 98vh;
-            overflow-y: auto;
-        }
-        
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 26px;
-        }
-        
-        h1 span {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .role-selector {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .role-btn {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #667eea;
-            background: white;
-            color: #667eea;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-            font-size: 16px;
-        }
-        
-        .role-btn.active {
-            background: #667eea;
-            color: white;
-        }
-        
-        .role-btn:active { transform: scale(0.95); }
-        
-        .scanner-wrapper {
-            position: relative;
-            margin-bottom: 10px;
-        }
-        
-        .scanner-container {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 1;
-            background: #000;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        
-        .scanner-container.camera-off {
-            background: #1a1a1a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .scanner-container.camera-off::after {
-            content: '📷 Kamera Mati';
-            color: #888;
-            font-size: 18px;
-            position: absolute;
-        }
-        
-        #scanner {
-            width: 100%;
-            height: 100%;
-            background: #1a1a1a;
-        }
-        
-        .scanner-container.camera-off #scanner { display: none; }
-        
-        .scanner-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70%;
-            height: 70%;
-            border: 3px solid rgba(255, 255, 255, 0.5);
-            border-radius: 10px;
-            pointer-events: none;
-        }
-        
-        .scanner-container.camera-off .scanner-overlay { display: none; }
-        
-        .scanner-overlay::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            width: 30px;
-            height: 30px;
-            border-top: 4px solid #00ff88;
-            border-left: 4px solid #00ff88;
-        }
-        
-        .scanner-overlay::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            right: -2px;
-            width: 30px;
-            height: 30px;
-            border-bottom: 4px solid #00ff88;
-            border-right: 4px solid #00ff88;
-        }
-        
-        .scan-line {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #00ff88, transparent);
-            animation: scan 2s linear infinite;
-        }
-        
-        .scanner-container.camera-off .scan-line { display: none; }
-        
-        @keyframes scan {
-            0% { top: 0; }
-            100% { top: 100%; }
-        }
-        
-        .camera-controls {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0;
-        }
-        
-        .camera-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .camera-btn:active { transform: scale(0.95); }
-        .camera-btn.on { background: #28a745; color: white; }
-        .camera-btn.off { background: #dc3545; color: white; }
-        .camera-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .status-text {
-            text-align: center;
-            color: #666;
-            margin: 8px 0;
-            font-size: 14px;
-            min-height: 24px;
-        }
-        
-        .status-text.loading { color: #667eea; animation: blink 1s infinite; }
-        .status-text.error { color: #dc3545; }
-        .status-text.success { color: #28a745; }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        
-        .connection-status {
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin-bottom: 10px;
-            display: none;
-            text-align: center;
-        }
-        
-        .connection-status.show { display: block; }
-        .connection-status.online { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .connection-status.offline { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .connection-status.checking { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
-        
-        .result-box {
-            margin-top: 15px;
-            padding: 20px;
-            border-radius: 10px;
-            background: #f8f9fa;
-            display: none;
-        }
-        
-        .result-box.show {
-            display: block;
-            animation: slideUp 0.5s ease;
-        }
-        
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .result-box.success { background: #d4edda; border: 2px solid #28a745; }
-        .result-box.error { background: #f8d7da; border: 2px solid #dc3545; }
-        
-        .result-box h3 {
-            margin-bottom: 10px;
-            color: #333;
-            font-size: 18px;
-        }
-        
-        .result-box .info-item {
-            padding: 8px 0;
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        
-        .result-box .info-item:last-child { border-bottom: none; }
-        .result-box .label { font-weight: bold; color: #666; font-size: 14px; }
-        .result-box .value { color: #333; font-size: 14px; word-break: break-all; }
-        
-        .btn-absen {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 15px;
-        }
-        
-        .btn-absen:active { transform: scale(0.97); }
-        .btn-absen:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .manual-input {
-            margin-top: 15px;
-            padding: 15px;
-            background: #f1f3f5;
-            border-radius: 10px;
-        }
-        
-        .manual-input h4 {
-            margin-bottom: 10px;
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .manual-input .input-group {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .manual-input input {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-        
-        .manual-input input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .manual-input .btn-check {
-            padding: 12px 20px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-            white-space: nowrap;
-        }
-        
-        .manual-input .btn-check:active { transform: scale(0.95); }
-        
-        .debug-info {
-            margin-top: 15px;
-            padding: 10px;
-            background: #fff3cd;
-            border-radius: 8px;
-            font-size: 12px;
-            color: #856404;
-            display: none;
-            word-break: break-all;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-        
-        .debug-info.show { display: block; }
-        
-        .debug-toggle {
-            margin-top: 5px;
-            padding: 5px 10px;
-            background: transparent;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 12px;
-            cursor: pointer;
-            color: #666;
-        }
-        
-        .url-info {
-            margin-top: 10px;
-            padding: 8px;
-            background: #e9ecef;
-            border-radius: 5px;
-            font-size: 11px;
-            color: #666;
-            word-break: break-all;
-            text-align: center;
-        }
-        
-        @media (max-width: 480px) {
-            .container { padding: 15px; }
-            h1 { font-size: 22px; }
-            .role-btn { font-size: 14px; padding: 10px; }
-            .camera-btn { font-size: 14px; padding: 10px; }
-            .manual-input .input-group { flex-direction: column; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Absensi QR Code</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .card { background: #fff; width: 100%; max-width: 480px; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    h2 { text-align: center; color: #333; margin-top: 0; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+    select, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; margin-bottom: 10px; }
+    .btn-group { display: flex; gap: 10px; }
+    .btn-role { flex: 1; background: #e0e0e0; border: none; cursor: pointer; font-weight: bold; }
+    .btn-role.active { background: #007bff; color: white; }
+    .btn-toggle { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
+    .btn-toggle.off { background: #dc3545; }
+    #reader { width: 100%; border-radius: 8px; overflow: hidden; margin-top: 10px; min-height: 250px; background: #222; }
+    #alert { margin-top: 15px; padding: 12px; border-radius: 8px; display: none; text-align: center; font-weight: bold; }
+    .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  </style>
 </head>
 <body>
-    <div class="container" id="app">
-        <h1>📋 <span>Absensi Online</span></h1>
-        
-        <div class="connection-status" id="connectionStatus"></div>
-        
-        <div class="role-selector">
-            <button class="role-btn active" data-role="siswa" onclick="setRole('siswa')">🎓 Siswa</button>
-            <button class="role-btn" data-role="guru" onclick="setRole('guru')">👨‍🏫 Guru</button>
-        </div>
-        
-        <div class="scanner-wrapper">
-            <div class="scanner-container" id="scannerContainer">
-                <div id="scanner"></div>
-                <div class="scanner-overlay"></div>
-                <div class="scan-line"></div>
-            </div>
-        </div>
-        
-        <div class="camera-controls">
-            <button class="camera-btn on" id="btnCameraOn" onclick="turnCameraOn()">
-                📷 Nyalakan Kamera
-            </button>
-            <button class="camera-btn off" id="btnCameraOff" onclick="turnCameraOff()" style="display:none;">
-                📷 Matikan Kamera
-            </button>
-        </div>
-        
-        <p class="status-text" id="statusText">🔌 Tekan "Nyalakan Kamera" untuk mulai</p>
-        
-        <div class="result-box" id="resultBox">
-            <h3 id="resultTitle">✅ Data Ditemukan</h3>
-            <div id="resultContent"></div>
-            <button class="btn-absen" id="btnAbsen" onclick="prosesAbsen()">
-                ✅ Absen Sekarang
-            </button>
-        </div>
-        
-        <div class="manual-input">
-            <h4>⌨️ Input Manual</h4>
-            <div class="input-group">
-                <input type="text" id="manualCode" placeholder="Masukkan NISN/NIP..." maxlength="18">
-                <button class="btn-check" onclick="cekManual()">🔍 Cek</button>
-            </div>
-        </div>
-        
-        <div class="url-info" id="urlInfo">🔗 API: <span id="apiUrlDisplay">Loading...</span></div>
-        
-        <button class="debug-toggle" onclick="toggleDebug()">🐛 Toggle Debug</button>
-        <div class="debug-info" id="debugInfo"></div>
-    </div>
 
-    <script>
-        // ==================== KONFIGURASI ====================
-        // ⚠️ GANTI DENGAN URL WEB APP ANDA ⚠️
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxKRVXiELhFICCuJH0AJtViCIeMtfE2V4NjrEaoKAPv1B_sV4u4TkcrccJ-wpyuwV2xEQ/exec';
-        const CHECK_INTERVAL = 30000;
-        
-        // ==================== VARIABEL ====================
-        let currentRole = 'siswa';
-        let scannedData = null;
-        let isScanning = false;
-        let isCameraOn = false;
-        let lastScannedCode = '';
-        let scanTimeout = null;
-        let quaggaInitialized = false;
-        let connectionCheckInterval = null;
-        let isOnline = false;
-        let debugVisible = false;
-        let retryCount = 0;
-        const MAX_RETRY = 3;
-        
-        // ==================== DEBUG ====================
-        function debugLog(message, data = null) {
-            console.log('[DEBUG]', message, data);
-            const debugEl = document.getElementById('debugInfo');
-            if (debugEl) {
-                const timestamp = new Date().toLocaleTimeString();
-                const logMessage = data ? `${message}: ${JSON.stringify(data)}` : message;
-                debugEl.innerHTML += `<div>[${timestamp}] ${logMessage}</div>`;
-                debugEl.scrollTop = debugEl.scrollHeight;
-            }
-        }
-        
-        function toggleDebug() {
-            debugVisible = !debugVisible;
-            const debugEl = document.getElementById('debugInfo');
-            debugEl.classList.toggle('show');
-            debugEl.style.display = debugVisible ? 'block' : 'none';
-        }
-        
-        // ==================== CEK KONEKSI ====================
-        async function checkConnection() {
-            const statusEl = document.getElementById('connectionStatus');
-            statusEl.className = 'connection-status show checking';
-            statusEl.textContent = '🔄 Mengecek koneksi ke server...';
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000);
-                
-                const response = await fetch(API_URL, {
-                    signal: controller.signal,
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    mode: 'cors' // Penting: gunakan mode CORS
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    debugLog('Connection OK, response:', data);
-                    isOnline = true;
-                    retryCount = 0;
-                    statusEl.className = 'connection-status show online';
-                    statusEl.textContent = '✅ Terhubung ke server';
-                    document.getElementById('statusText').textContent = '📸 Siap digunakan';
-                    document.getElementById('statusText').className = 'status-text success';
-                    return true;
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-            } catch (error) {
-                isOnline = false;
-                retryCount++;
-                debugLog('Connection failed:', error.message);
-                
-                statusEl.className = 'connection-status show offline';
-                statusEl.textContent = `❌ Gagal koneksi (${retryCount}/${MAX_RETRY}). Cek URL API & internet.`;
-                document.getElementById('statusText').textContent = '❌ Tidak ada koneksi ke server';
-                document.getElementById('statusText').className = 'status-text error';
-                
-                if (retryCount < MAX_RETRY) {
-                    setTimeout(() => checkConnection(), 5000);
-                }
-                
-                return false;
-            }
-        }
-        
-        // ==================== TEST API ====================
-        async function testAPI() {
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    },
-                    mode: 'cors'
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    debugLog('API Test Success:', data);
-                    return true;
-                }
-                return false;
-            } catch (error) {
-                debugLog('API Test Failed:', error.message);
-                return false;
-            }
-        }
-        
-        // ==================== SET ROLE ====================
-        function setRole(role) {
-            debugLog('Set role:', role);
-            currentRole = role;
-            
-            document.querySelectorAll('.role-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.role === role);
-            });
-            
-            scannedData = null;
-            document.getElementById('resultBox').classList.remove('show');
-            document.getElementById('manualCode').value = '';
-            lastScannedCode = '';
-            
-            if (isCameraOn) {
-                stopScanner();
-                setTimeout(() => startScanner(), 500);
-            }
-        }
-        
-        // ==================== KONTROL KAMERA ====================
-        function turnCameraOn() {
-            debugLog('Turn camera ON');
-            
-            // Cek koneksi dulu
-            if (!isOnline) {
-                document.getElementById('statusText').textContent = '⚠️ Tidak ada koneksi ke server';
-                document.getElementById('statusText').className = 'status-text error';
-                checkConnection();
-                return;
-            }
-            
-            document.getElementById('btnCameraOn').style.display = 'none';
-            document.getElementById('btnCameraOff').style.display = 'flex';
-            document.getElementById('scannerContainer').classList.remove('camera-off');
-            document.getElementById('statusText').textContent = '📷 Menyalakan kamera...';
-            document.getElementById('statusText').className = 'status-text loading';
-            
-            startScanner();
-        }
-        
-        function turnCameraOff() {
-            debugLog('Turn camera OFF');
-            document.getElementById('btnCameraOn').style.display = 'flex';
-            document.getElementById('btnCameraOff').style.display = 'none';
-            document.getElementById('scannerContainer').classList.add('camera-off');
-            document.getElementById('statusText').textContent = '📷 Kamera dimatikan';
-            document.getElementById('statusText').className = 'status-text';
-            stopScanner();
-        }
-        
-        // ==================== START SCANNER ====================
-        function startScanner() {
-            debugLog('Starting scanner...');
-            
-            if (quaggaInitialized) {
-                debugLog('Scanner already initialized, restarting');
-                stopScanner();
-                setTimeout(() => startScanner(), 500);
-                return;
-            }
-            
-            isScanning = true;
-            isCameraOn = true;
-            document.getElementById('statusText').textContent = '📷 Menyiapkan kamera...';
-            document.getElementById('statusText').className = 'status-text loading';
-            
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                document.getElementById('statusText').textContent = '❌ Browser tidak mendukung kamera';
-                document.getElementById('statusText').className = 'status-text error';
-                debugLog('Browser tidak mendukung getUserMedia');
-                turnCameraOff();
-                return;
-            }
-            
-            const targetElement = document.querySelector('#scanner');
-            if (!targetElement) {
-                debugLog('Element #scanner tidak ditemukan');
-                return;
-            }
-            
-            try {
-                Quagga.init({
-                    inputStream: {
-                        name: "Live",
-                        type: "LiveStream",
-                        target: targetElement,
-                        constraints: {
-                            facingMode: "environment",
-                            width: { ideal: 640 },
-                            height: { ideal: 480 }
-                        }
-                    },
-                    decoder: {
-                        readers: [
-                            "code_128_reader",
-                            "ean_reader",
-                            "ean_8_reader",
-                            "code_39_reader",
-                            "code_93_reader",
-                            "codabar_reader",
-                            "upc_reader",
-                            "upc_e_reader",
-                            "i2of5_reader",
-                            "2of5_reader"
-                        ]
-                    },
-                    locate: {
-                        patchSize: "medium",
-                        halfSample: true
-                    }
-                }, function(err) {
-                    if (err) {
-                        debugLog('Quagga init error:', err);
-                        document.getElementById('statusText').textContent = '❌ Gagal akses kamera: ' + err.message;
-                        document.getElementById('statusText').className = 'status-text error';
-                        isScanning = false;
-                        isCameraOn = false;
-                        turnCameraOff();
-                        return;
-                    }
-                    
-                    debugLog('Quagga initialized successfully');
-                    quaggaInitialized = true;
-                    Quagga.start();
-                    document.getElementById('statusText').textContent = '📸 Arahkan kamera ke barcode';
-                    document.getElementById('statusText').className = 'status-text success';
-                    debugLog('Scanner started');
-                });
-                
-                Quagga.onDetected(function(data) {
-                    debugLog('Barcode detected:', data);
-                    const rawCode = data.codeResult.code;
-                    debugLog('Raw code:', rawCode);
-                    
-                    const processedCode = processBarcodeCode(rawCode);
-                    debugLog('Processed code:', processedCode);
-                    
-                    if (processedCode === lastScannedCode) {
-                        debugLog('Duplicate scan ignored');
-                        return;
-                    }
-                    
-                    lastScannedCode = processedCode;
-                    
-                    if (scanTimeout) {
-                        clearTimeout(scanTimeout);
-                    }
-                    
-                    handleBarcodeDetected(processedCode);
-                    
-                    scanTimeout = setTimeout(() => {
-                        lastScannedCode = '';
-                    }, 3000);
-                });
-                
-            } catch (error) {
-                debugLog('Error starting scanner:', error);
-                document.getElementById('statusText').textContent = '❌ Error: ' + error.message;
-                document.getElementById('statusText').className = 'status-text error';
-                isScanning = false;
-                isCameraOn = false;
-                turnCameraOff();
-            }
-        }
-        
-        // ==================== PROSES BARCODE ====================
-        function processBarcodeCode(rawCode) {
-            if (!rawCode) return '';
-            
-            let cleanCode = rawCode.replace(/\D/g, '');
-            debugLog('Clean code:', cleanCode);
-            
-            const expectedLength = currentRole === 'siswa' ? 10 : 18;
-            
-            if (cleanCode.length < expectedLength) {
-                const missingZeros = expectedLength - cleanCode.length;
-                cleanCode = '0'.repeat(missingZeros) + cleanCode;
-                debugLog('Added leading zeros:', cleanCode);
-            }
-            
-            if (cleanCode.length > expectedLength) {
-                cleanCode = cleanCode.slice(-expectedLength);
-                debugLog('Trimmed to length:', cleanCode);
-            }
-            
-            return cleanCode;
-        }
-        
-        // ==================== STOP SCANNER ====================
-        function stopScanner() {
-            debugLog('Stopping scanner...');
-            isScanning = false;
-            isCameraOn = false;
-            try {
-                if (quaggaInitialized) {
-                    Quagga.stop();
-                    Quagga.offDetected();
-                    quaggaInitialized = false;
-                }
-            } catch (e) {
-                debugLog('Error stopping scanner:', e);
-            }
-        }
-        
-        // ==================== HANDLE BARCODE ====================
-        function handleBarcodeDetected(code) {
-            debugLog('Handle barcode:', code);
-            
-            try {
-                Quagga.pause();
-            } catch (e) {
-                debugLog('Error pausing scanner:', e);
-            }
-            
-            if (!isOnline) {
-                showResult(false, '❌ Tidak Ada Koneksi', 
-                    'Periksa koneksi internet Anda');
-                document.getElementById('statusText').textContent = '❌ Tidak ada koneksi';
-                document.getElementById('statusText').className = 'status-text error';
-                setTimeout(() => {
-                    if (isScanning) {
-                        try { Quagga.resume(); } catch(e) {}
-                    }
-                }, 2500);
-                return;
-            }
-            
-            if (currentRole === 'siswa') {
-                if (code.length !== 10) {
-                    showResult(false, '❌ NISN harus 10 digit', 
-                        `Panjang: ${code.length} digit\nKode: ${code}`);
-                    document.getElementById('statusText').textContent = '❌ NISN harus 10 digit';
-                    document.getElementById('statusText').className = 'status-text error';
-                    setTimeout(() => {
-                        if (isScanning) {
-                            try { Quagga.resume(); } catch(e) {}
-                        }
-                    }, 2500);
-                    return;
-                }
-                
-                if (!/^\d{10}$/.test(code)) {
-                    showResult(false, '❌ NISN harus angka', 
-                        `Format tidak valid: ${code}`);
-                    document.getElementById('statusText').textContent = '❌ Format NISN tidak valid';
-                    document.getElementById('statusText').className = 'status-text error';
-                    setTimeout(() => {
-                        if (isScanning) {
-                            try { Quagga.resume(); } catch(e) {}
-                        }
-                    }, 2500);
-                    return;
-                }
-            } else {
-                if (code.length !== 18) {
-                    showResult(false, '❌ NIP harus 18 digit', 
-                        `Panjang: ${code.length} digit\nKode: ${code}`);
-                    document.getElementById('statusText').textContent = '❌ NIP harus 18 digit';
-                    document.getElementById('statusText').className = 'status-text error';
-                    setTimeout(() => {
-                        if (isScanning) {
-                            try { Quagga.resume(); } catch(e) {}
-                        }
-                    }, 2500);
-                    return;
-                }
-                
-                if (!/^\d{18}$/.test(code)) {
-                    showResult(false, '❌ NIP harus angka', 
-                        `Format tidak valid: ${code}`);
-                    document.getElementById('statusText').textContent = '❌ Format NIP tidak valid';
-                    document.getElementById('statusText').className = 'status-text error';
-                    setTimeout(() => {
-                        if (isScanning) {
-                            try { Quagga.resume(); } catch(e) {}
-                        }
-                    }, 2500);
-                    return;
-                }
-            }
-            
-            document.getElementById('statusText').textContent = `📌 Kode: ${code}`;
-            document.getElementById('statusText').className = 'status-text';
-            cekData(code);
-            
-            setTimeout(() => {
-                if (isScanning) {
-                    try { Quagga.resume(); } catch(e) {}
-                }
-            }, 3000);
-        }
-        
-        // ==================== CEK DATA ====================
-        function cekData(code) {
-            debugLog('Cek data:', code);
-            document.getElementById('statusText').textContent = '⏳ Memeriksa data...';
-            document.getElementById('statusText').className = 'status-text loading';
-            
-            const endpoint = currentRole === 'siswa' ? 'cekSiswa' : 'cekGuru';
-            const param = currentRole === 'siswa' ? 'nisn' : 'nip';
-            
-            const url = `${API_URL}?action=${endpoint}&${param}=${encodeURIComponent(code)}`;
-            debugLog('Fetching URL:', url);
-            
-            fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                mode: 'cors'
-            })
-            .then(response => {
-                debugLog('Response status:', response.status);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                debugLog('Response data:', data);
-                
-                if (data.status === 'found') {
-                    scannedData = { code: code, data: data };
-                    showResult(true, '✅ Data Ditemukan', data);
-                    document.getElementById('statusText').textContent = '✅ Siap absen';
-                    document.getElementById('statusText').className = 'status-text success';
-                } else {
-                    showResult(false, '❌ Data Tidak Ditemukan', 
-                        data.message || 'Tidak terdaftar di database');
-                    document.getElementById('statusText').textContent = '❌ Data tidak ditemukan';
-                    document.getElementById('statusText').className = 'status-text error';
-                    scannedData = null;
-                }
-            })
-            .catch(error => {
-                debugLog('Fetch error:', error);
-                showResult(false, '❌ Error Koneksi', 
-                    'Gagal terhubung ke server.\nPeriksa koneksi internet dan URL API.');
-                document.getElementById('statusText').textContent = '❌ Error koneksi';
-                document.getElementById('statusText').className = 'status-text error';
-                scannedData = null;
-                checkConnection();
-            });
-        }
-        
-        // ==================== SHOW RESULT ====================
-        function showResult(success, title, content) {
-            debugLog('Show result:', { success, title, content });
-            
-            const box = document.getElementById('resultBox');
-            const titleEl = document.getElementById('resultTitle');
-            const contentEl = document.getElementById('resultContent');
-            
-            box.className = 'result-box show ' + (success ? 'success' : 'error');
-            titleEl.textContent = title;
-            
-            if (success && content.data) {
-                const data = content.data;
-                let html = '';
-                const displayFields = ['nisn', 'nip', 'nama', 'kelas', 'jurusan', 'mapel'];
-                for (const [key, value] of Object.entries(data)) {
-                    if (key !== 'status' && displayFields.includes(key)) {
-                        const label = key.toUpperCase();
-                        html += `<div class="info-item">
-                            <span class="label">${label}</span>
-                            <span class="value">${value}</span>
-                        </div>`;
-                    }
-                }
-                contentEl.innerHTML = html;
-                document.getElementById('btnAbsen').style.display = 'block';
-            } else {
-                const message = typeof content === 'string' ? content : JSON.stringify(content);
-                contentEl.innerHTML = `<p style="color:#666; text-align:center; white-space:pre-line;">${message}</p>`;
-                document.getElementById('btnAbsen').style.display = 'none';
-            }
-        }
-        
-        // ==================== PROSES ABSEN ====================
-        function prosesAbsen() {
-            if (!scannedData) {
-                alert('Silakan scan barcode terlebih dahulu!');
-                return;
-            }
-            
-            if (!isOnline) {
-                alert('Tidak ada koneksi ke server!');
-                return;
-            }
-            
-            const btn = document.getElementById('btnAbsen');
-            btn.disabled = true;
-            btn.textContent = '⏳ Memproses...';
-            
-            const endpoint = currentRole === 'siswa' ? 'absenSiswa' : 'absenGuru';
-            const param = currentRole === 'siswa' ? 'nisn' : 'nip';
-            const code = scannedData.code;
-            
-            const url = `${API_URL}?action=${endpoint}&${param}=${encodeURIComponent(code)}`;
-            debugLog('Absen URL:', url);
-            
-            fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                mode: 'cors'
-            })
-            .then(response => response.json())
-            .then(data => {
-                debugLog('Absen response:', data);
-                
-                if (data.status === 'success') {
-                    showResult(true, '✅ Absen Berhasil!', {
-                        data: {
-                            'Status': 'Hadir',
-                            'Waktu': data.data.waktu || new Date().toLocaleString(),
-                            'Nama': data.data.nama || scannedData.data.nama
-                        }
-                    });
-                    document.getElementById('statusText').textContent = '✅ Absen berhasil!';
-                    document.getElementById('statusText').className = 'status-text success';
-                    scannedData = null;
-                    
-                    btn.disabled = false;
-                    btn.textContent = '✅ Absen Sekarang';
-                    
-                    setTimeout(() => {
-                        document.getElementById('btnAbsen').style.display = 'none';
-                    }, 3000);
-                } else {
-                    showResult(false, '❌ Gagal Absen', data.message);
-                    document.getElementById('statusText').textContent = '❌ ' + data.message;
-                    document.getElementById('statusText').className = 'status-text error';
-                    btn.disabled = false;
-                    btn.textContent = '✅ Absen Sekarang';
-                }
-            })
-            .catch(error => {
-                debugLog('Absen error:', error);
-                showResult(false, '❌ Error Koneksi', 
-                    'Gagal terhubung ke server.\nPeriksa koneksi internet.');
-                document.getElementById('statusText').textContent = '❌ Error koneksi';
-                document.getElementById('statusText').className = 'status-text error';
-                btn.disabled = false;
-                btn.textContent = '✅ Absen Sekarang';
-                checkConnection();
-            });
-        }
-        
-        // ==================== CEK MANUAL ====================
-        function cekManual() {
-            const code = document.getElementById('manualCode').value.trim();
-            if (!code) {
-                alert('Masukkan NISN/NIP terlebih dahulu!');
-                return;
-            }
-            
-            if (!isOnline) {
-                alert('Tidak ada koneksi ke server! Periksa internet Anda.');
-                return;
-            }
-            
-            let cleanCode = code.replace(/\D/g, '');
-            
-            if (currentRole === 'siswa') {
-                if (cleanCode.length !== 10) {
-                    alert(`NISN harus 10 digit! (${cleanCode.length} digit)`);
-                    return;
-                }
-            } else {
-                if (cleanCode.length !== 18) {
-                    alert(`NIP harus 18 digit! (${cleanCode.length} digit)`);
-                    return;
-                }
-            }
-            
-            document.getElementById('statusText').textContent = `📌 Input: ${cleanCode}`;
-            document.getElementById('statusText').className = 'status-text';
-            cekData(cleanCode);
-        }
-        
-        // ==================== INIT ====================
-        window.onload = function() {
-            // Tampilkan URL API
-            document.getElementById('apiUrlDisplay').textContent = API_URL;
-            
-            debugLog('=== APP STARTED ===');
-            debugLog('API_URL:', API_URL);
-            debugLog('Browser:', navigator.userAgent);
-            
-            setRole('siswa');
-            
-            // Cek koneksi dan mulai
-            checkConnection().then(() => {
-                turnCameraOff();
-                document.getElementById('statusText').textContent = '📷 Tekan "Nyalakan Kamera" untuk mulai';
-                document.getElementById('statusText').className = 'status-text';
-            });
-            
-            connectionCheckInterval = setInterval(checkConnection, CHECK_INTERVAL);
-            
-            document.getElementById('manualCode').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    cekManual();
-                }
-            });
-            
-            document.getElementById('manualCode').addEventListener('input', function(e) {
-                this.value = this.value.replace(/\D/g, '');
-            });
-            
-            debugLog('=== APP READY ===');
-        };
-        
-        window.onbeforeunload = function() {
-            stopScanner();
-            if (connectionCheckInterval) {
-                clearInterval(connectionCheckInterval);
-            }
-        };
-        
-        window.addEventListener('error', function(e) {
-            debugLog('Global error:', e.message);
-            document.getElementById('statusText').textContent = '❌ Error: ' + e.message;
-            document.getElementById('statusText').className = 'status-text error';
-        });
-    </script>
+<div class="card">
+  <h2>Absensi Scanner</h2>
+
+  <!-- Input Sesi -->
+  <div class="form-group">
+    <label for="sesiSelect">Pilih Sesi Absen:</label>
+    <select id="sesiSelect">
+      <option value="Sesi 1">Sesi 1 (Masuk Pagi)</option>
+      <option value="Sesi 2">Sesi 2 (Siang/Kegiatan)</option>
+      <option value="Sesi 3">Sesi 3 (Pulang)</option>
+    </select>
+  </div>
+
+  <!-- Pilihan Peran -->
+  <div class="form-group">
+    <label>Pilih Peran:</label>
+    <div class="btn-group">
+      <button type="button" class="btn-role active" id="btnSiswa" onclick="selectRole('siswa')">Siswa</button>
+      <button type="button" class="btn-role" id="btnGuru" onclick="selectRole('guru')">Guru</button>
+    </div>
+  </div>
+
+  <!-- Kontrol Kamera -->
+  <button id="btnCameraToggle" class="btn-toggle" onclick="toggleCamera()">Buka Kamera</button>
+  <div id="reader"></div>
+
+  <!-- Output Status -->
+  <div id="alert"></div>
+</div>
+
+<script>
+  // TEMPELKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby350UBibsLv1xCMz5chY6uh4ShvVaX9O7VS6mWT7YvCoGXrXzp5MLf-hHWPmm2KVa9/exec";
+
+  let currentRole = 'siswa';
+  let html5QrcodeScanner = null;
+  let isCameraOn = false;
+  let isProcessing = false;
+
+  function selectRole(role) {
+    currentRole = role;
+    document.getElementById('btnSiswa').classList.toggle('active', role === 'siswa');
+    document.getElementById('btnGuru').classList.toggle('active', role === 'guru');
+  }
+
+  function toggleCamera() {
+    if (isCameraOn) {
+      stopCamera();
+    } else {
+      startCamera();
+    }
+  }
+
+  function startCamera() {
+    html5QrcodeScanner = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+    html5QrcodeScanner.start(
+      { facingMode: "environment" },
+      config,
+      onScanSuccess
+    ).then(() => {
+      isCameraOn = true;
+      const btn = document.getElementById('btnCameraToggle');
+      btn.innerText = "Tutup Kamera";
+      btn.classList.add('off');
+    }).catch(err => {
+      showAlert("danger", "Gagal mengakses kamera: " + err);
+    });
+  }
+
+  function stopCamera() {
+    if (html5QrcodeScanner) {
+      html5QrcodeScanner.stop().then(() => {
+        html5QrcodeScanner.clear();
+        isCameraOn = false;
+        const btn = document.getElementById('btnCameraToggle');
+        btn.innerText = "Buka Kamera";
+        btn.classList.remove('off');
+      }).catch(err => console.error(err));
+    }
+  }
+
+  function onScanSuccess(decodedText) {
+    if (isProcessing) return; // Mencegah multiple submit cepat
+    isProcessing = true;
+
+    const sesi = document.getElementById('sesiSelect').value;
+    showAlert("warning", "Memproses absensi...");
+
+    fetch(GAS_WEB_APP_URL, {
+      method: "POST",
+      mode: "no-cors", // Penting untuk bypass CORS Google Apps Script
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role: currentRole,
+        code: decodedText,
+        sesi: sesi
+      })
+    })
+    .then(() => {
+      showAlert("success", `QR Code [${decodedText}] berhasil diproses!`);
+      setTimeout(() => { isProcessing = false; }, 3000); // Debounce 3 detik
+    })
+    .catch(error => {
+      showAlert("danger", "Terjadi kesalahan jaringan.");
+      isProcessing = false;
+    });
+  }
+
+  function showAlert(type, message) {
+    const alertDiv = document.getElementById('alert');
+    alertDiv.className = `alert-${type}`;
+    alertDiv.innerText = message;
+    alertDiv.style.display = 'block';
+  }
+</script>
+
 </body>
 </html>

@@ -90,13 +90,11 @@
   <div id="menu-scanner" class="section">
     <h3>Scanner QR Barcode</h3>
     
-    <!-- Tampilan Sesi Real-time -->
     <div style="background:#e8f0fe; padding:12px; border-radius:8px; margin-bottom:15px; text-align:center;">
       <span style="font-size:13px; color:#555;">Sesi Yang Sedang Berlangsung:</span>
       <h4 id="realtimeActiveSesi" style="margin:5px 0 0 0; color:#1a73e8;">Memuat Sesi...</h4>
     </div>
 
-    <!-- Tombol Switch Siswa & Guru khusus Admin -->
     <div id="scannerAdminSwitch" class="form-group" style="display:none;">
       <label>Peran Absen:</label>
       <div style="display:flex; gap:10px;">
@@ -270,7 +268,7 @@
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxT3gzaXtaaUxveTmoqiuVt75KCQZh6CM2Uu6ImpfpjLvv2x5FuLxc9bNeMoIZw25vZ/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzWOQWW6EFJ9fET4M4OnT5AbwJCoMr2Hyg78sl437IWT_prdm0pPPbI-Qiz-F0HdUz_/exec";
 
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
@@ -282,8 +280,20 @@
   let globalLiburList = [];
   let realtimeTimer = null;
   let currentActiveSesiName = "";
+  let cachedPinConfig = null; // Cache lokal untuk mempercepat proses login
 
   document.getElementById('izinTanggal').value = new Date().toISOString().split('T')[0];
+
+  // Pre-load konfigurasi PIN di latar belakang agar login instan
+  preloadPinConfig();
+
+  function preloadPinConfig() {
+    sendRequest({ action: 'get_pengaturan' }, res => {
+      if (res.status === 'success') {
+        cachedPinConfig = res.data;
+      }
+    });
+  }
 
   function checkMenuAccess(menuName, btnEl) {
     if (menuName === 'cari') {
@@ -310,20 +320,53 @@
   }
 
   function submitLoginPin() {
-    const pin = document.getElementById('inputPinModal').value;
+    const pin = document.getElementById('inputPinModal').value.trim();
     if (!pin) return alert("PIN tidak boleh kosong!");
 
+    // Cek instan menggunakan cache lokal jika sudah tersedia untuk mempercepat proses login
+    if (cachedPinConfig) {
+      let pinGuru = "1234";
+      let pinAdmin = "123456";
+      let pinPengaturan = "456789";
+
+      cachedPinConfig.forEach(p => {
+        if (p.sesi === "PIN_Guru") pinGuru = p.mulai;
+        if (p.sesi === "PIN_Admin") pinAdmin = p.mulai;
+        if (p.sesi === "PIN_Pengaturan") pinPengaturan = p.mulai;
+      });
+
+      if (pin === pinPengaturan || pin === pinAdmin || pin === pinGuru) {
+        if (pin === pinPengaturan) userSession = "pengaturan";
+        else if (pin === pinAdmin) userSession = "admin";
+        else userSession = "guru";
+
+        closeModal();
+        applyRoleAccessUI(userSession);
+        showAlert("success", `Login Berhasil sebagai ${userSession.toUpperCase()}!`);
+        if (pendingMenu) {
+          switchMenu(pendingMenu.name, pendingMenu.el);
+          pendingMenu = '';
+        }
+        return;
+      } else {
+        showAlert("danger", "Login Gagal: PIN tidak valid!");
+        return;
+      }
+    }
+
+    // Fallback ke server jika cache belum siap
     sendRequest({ action: 'login_pin', pin: pin }, res => {
       if (res.status === 'success') {
         userSession = res.role;
         closeModal();
         applyRoleAccessUI(userSession);
+        showAlert("success", res.message);
         if (pendingMenu) {
           switchMenu(pendingMenu.name, pendingMenu.el);
           pendingMenu = '';
         }
       } else {
-        alert(res.message);
+        showAlert("danger", res.message);
       }
     });
   }
@@ -338,10 +381,9 @@
     document.querySelectorAll('.menu-grid button').forEach(b => b.classList.add('locked'));
     document.getElementById('menuBtn-cari').classList.remove('locked');
 
-    // Pindah otomatis ke menu Cek Data
     const cariBtn = document.getElementById('menuBtn-cari');
     switchMenu('cari', cariBtn);
-    alert("Berhasil keluar/logout.");
+    showAlert("success", "Berhasil keluar/logout akun.");
   }
 
   function applyRoleAccessUI(role) {
@@ -355,7 +397,6 @@
       document.getElementById('menuBtn-izin').classList.remove('locked');
       document.getElementById('menuBtn-rekap').classList.remove('locked');
       
-      // Guru hanya bisa input izin untuk siswa
       izinContainer.style.display = 'none';
       izinRoleSelect.value = 'siswa';
       setRole('siswa');
@@ -369,7 +410,6 @@
         document.getElementById('menuBtn-rekap').classList.remove('locked');
       }
       
-      // Admin bisa memilih input izin siswa atau guru
       izinContainer.style.display = 'block';
       izinRoleSelect.innerHTML = `
         <option value="siswa">Siswa</option>
@@ -418,14 +458,13 @@
   }
 
   function updateRealtimeSesi() {
-    sendRequest({ action: 'get_pengaturan' }, res => {
-      if (res.status !== 'success') return;
+    const processSesiCheck = (dataList) => {
       const now = new Date();
       const currentMin = now.getHours() * 60 + now.getMinutes();
       let activeSesiLabel = "Tidak Ada Sesi Aktif Saat Ini";
       currentActiveSesiName = "";
 
-      res.data.forEach(p => {
+      dataList.forEach(p => {
         if (p.sesi.startsWith('Sesi')) {
           const mulai = parseJamToMin(p.mulai);
           const tutup = parseJamToMin(p.tutup);
@@ -436,23 +475,36 @@
         }
       });
 
-      document.getElementById('realtimeActiveSesi').innerText = activeSesiLabel;
+      const sesiEl = document.getElementById('realtimeActiveSesi');
+      if (sesiEl) sesiEl.innerText = activeSesiLabel;
 
-      // Atur tombol kamera menjadi off / disable jika tidak ada sesi aktif
       const toggleBtn = document.getElementById('btnCameraToggle');
-      if (!currentActiveSesiName) {
-        if (isCameraOn) stopCamera();
-        toggleBtn.disabled = true;
-        toggleBtn.style.opacity = '0.5';
-        toggleBtn.style.cursor = 'not-allowed';
-        toggleBtn.innerText = "Tidak Ada Sesi Aktif";
-      } else {
-        toggleBtn.disabled = false;
-        toggleBtn.style.opacity = '1';
-        toggleBtn.style.cursor = 'pointer';
-        if (!isCameraOn) toggleBtn.innerText = "Buka Kamera";
+      if (toggleBtn) {
+        if (!currentActiveSesiName) {
+          if (isCameraOn) stopCamera();
+          toggleBtn.disabled = true;
+          toggleBtn.style.opacity = '0.5';
+          toggleBtn.style.cursor = 'not-allowed';
+          toggleBtn.innerText = "Tidak Ada Sesi Aktif";
+        } else {
+          toggleBtn.disabled = false;
+          toggleBtn.style.opacity = '1';
+          toggleBtn.style.cursor = 'pointer';
+          if (!isCameraOn) toggleBtn.innerText = "Buka Kamera";
+        }
       }
-    });
+    };
+
+    if (cachedPinConfig) {
+      processSesiCheck(cachedPinConfig);
+    } else {
+      sendRequest({ action: 'get_pengaturan' }, res => {
+        if (res.status === 'success') {
+          cachedPinConfig = res.data;
+          processSesiCheck(res.data);
+        }
+      });
+    }
   }
 
   function setRole(role) {
@@ -486,7 +538,7 @@
     html5QrcodeScanner = new Html5Qrcode("reader");
     html5QrcodeScanner.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 220, height: 220 } },
+      { fps: 15, qrbox: { width: 220, height: 220 } }, // Peningkatan fps agar pembacaan lebih responsif
       (code) => onScanSuccess(code, currentActiveSesiName)
     ).then(() => {
       isCameraOn = true;
@@ -513,16 +565,27 @@
   function onScanSuccess(code, sesiTarget) {
     if (isProcessing) return;
     isProcessing = true;
-    showAlert("warning", "Memproses data...");
-
-    sendRequest({
-      action: 'absen_qr',
-      role: currentRole,
-      code: code,
-      sesi: sesiTarget
-    }, res => {
+    
+    // Menggunakan fetch asynchronous non-blocking agar jeda antar scan barcode menjadi sangat cepat
+    fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: 'absen_qr',
+        role: currentRole,
+        code: code,
+        sesi: sesiTarget
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
       showAlert(res.status, res.message);
-      setTimeout(() => { isProcessing = false; }, 3000);
+      // Jeda singkat yang dioptimalkan agar perpindahan antar barcode terasa instan (1,2 detik)
+      setTimeout(() => { isProcessing = false; }, 1200);
+    })
+    .catch(err => {
+      showAlert("danger", "Gagal mengirim data absen.");
+      isProcessing = false;
     });
   }
 
@@ -637,6 +700,7 @@
     sendRequest({ action: 'get_pengaturan' }, res => {
       if (res.status === 'success') {
         globalPengaturanData = res.data;
+        cachedPinConfig = res.data; // Perbarui cache
         let activeSesiNames = new Set(globalPengaturanData.map(p => p.sesi));
         document.getElementById('chkSesi1').checked = activeSesiNames.has('Sesi 1');
         document.getElementById('chkSesi2').checked = activeSesiNames.has('Sesi 2');
@@ -709,7 +773,9 @@
     showAlert("warning", "Menyimpan pengaturan...");
     sendRequest({ action: 'save_pengaturan', config: config }, res => {
       showAlert(res.status, res.message);
-      if(res.status === 'success') loadPengaturanDataFromServer();
+      if(res.status === 'success') {
+        loadPengaturanDataFromServer();
+      }
     });
   }
 

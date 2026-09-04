@@ -30,9 +30,14 @@
     .nav-item:hover, .nav-item.active { background: #e8f0fe; color: #1a73e8; }
     .nav-item.locked { opacity: 0.5; color: #888; }
 
-    /* CONTENT CONTAINER */
+    /* CONTENT CONTAINER (Fixed layout, tidak ikut bergeser saat sidebar toggle) */
     .content-container { margin-left: 260px; padding: 20px; flex: 1; width: calc(100% - 260px); background: #f4f6f9; transition: margin-left 0.3s ease, width 0.3s ease; }
-    .content-container.expanded { margin-left: 0; width: 100%; }
+    @media(min-width: 901px) {
+      .content-container { margin-left: 260px !important; width: calc(100% - 260px) !important; }
+    }
+    @media(max-width: 900px) {
+      .content-container { margin-left: 0 !important; width: 100% !important; }
+    }
     .section { display: none; }
     .section.active { display: block; }
 
@@ -71,13 +76,13 @@
     th, td { padding: 8px; border-bottom: 1px solid #ddd; }
     th { background-color: #f8f9fa; color: #333; }
 
-    #loginModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 3000; }
-    .modal-content { background: #fff; padding: 25px; border-radius: 10px; width: 90%; max-width: 350px; text-align: center; }
+    /* MODAL LOGIN PIN (Diperbaiki agar pas & tidak terlalu melebar di HP) */
+    #loginModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 3000; padding: 15px; }
+    .modal-content { background: #fff; padding: 20px; border-radius: 10px; width: 100%; max-width: 320px; text-align: center; box-sizing: border-box; }
   </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-left">
     <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Buka/Tutup Menu">☰</button>
@@ -91,13 +96,11 @@
   </div>
 </div>
 
-<!-- POPUP SCAN NOTIFICATION -->
 <div id="scanPopup">
   <b id="popupTitle" style="display:block; font-size:14px; margin-bottom:3px;">Notifikasi Scan</b>
   <span id="popupMessage" style="font-size:12px;">Pesan hasil scan...</span>
 </div>
 
-<!-- MODAL LOGIN PIN -->
 <div id="loginModal" style="display:none;">
   <div class="modal-content">
     <h3>Autentikasi PIN</h3>
@@ -110,10 +113,8 @@
   </div>
 </div>
 
-<!-- MAIN LAYOUT -->
 <div class="main-wrapper">
   
-  <!-- SIDEBAR -->
   <div class="sidebar" id="appSidebar">
     <div class="nav-category">DASHBOARD</div>
     <a class="nav-item active" onclick="switchMenu('dashboard', this)">🏠 Dashboard Utama</a>
@@ -130,10 +131,8 @@
     <a class="nav-item" id="nav-logout" style="display:none; color:#d93025;" onclick="logoutSession()">🚪 Keluar / Logout</a>
   </div>
 
-  <!-- CONTENT CONTAINER -->
   <div class="content-container" id="appContent">
 
-    <!-- 1. DASHBOARD UTAMA -->
     <div id="menu-dashboard" class="section active">
       <h3 style="margin-top:0; color:#1a73e8;">Dashboard Real-Time Kehadiran</h3>
       
@@ -184,7 +183,6 @@
       </div>
     </div>
 
-    <!-- 2. CARI DATA SISWA -->
     <div id="menu-cari" class="section">
       <h3>Pencarian Data Kehadiran</h3>
       <div class="form-group" style="display:none;"><select id="cariPeran"><option value="SISWA" selected>Siswa</option></select></div>
@@ -202,7 +200,6 @@
       </div>
     </div>
 
-    <!-- 3. SCANNER BARCODE -->
     <div id="menu-scanner" class="section">
       <h3>Scanner QR Barcode</h3>
       <div id="scannerAdminSwitch" class="form-group" style="display:none;">
@@ -212,11 +209,16 @@
           <button type="button" id="btnGuruAdmin" style="background:#6c757d; color:white; border:none;" onclick="setRole('guru')">Guru</button>
         </div>
       </div>
+      
+      <div style="background:#e8f0fe; padding:10px; border-radius:6px; margin-bottom:10px; border-left:4px solid #1a73e8; max-width:400px;">
+        <span style="font-size:11px; color:#555; font-weight:600;">Sesi Aktif untuk Scanner:</span>
+        <div id="scannerActiveSesiLabel" style="font-weight:bold; color:#1a73e8; font-size:13px;">Memuat sesi...</div>
+      </div>
+
       <button id="btnCameraToggle" class="btn-toggle" onclick="toggleCamera()">Buka Kamera</button>
       <div id="reader"></div>
     </div>
 
-    <!-- 4. INPUT IZIN / SAKIT -->
     <div id="menu-izin" class="section">
       <h3>Input Izin / Sakit Manual</h3>
       <div class="form-group" id="izinRoleContainer"><label>Peran:</label><select id="izinRole"><option value="siswa">Siswa</option></select></div>
@@ -227,7 +229,6 @@
       <button class="btn-primary" onclick="simpanIzin()">Simpan Data</button>
     </div>
 
-    <!-- 5. REKAP DATA -->
     <div id="menu-rekap" class="section">
       <h3>Rekap Kehadiran</h3>
       <div class="form-group"><label>Tipe Rekap:</label><select id="rekapRole" onchange="toggleRekapFilter()"><option value="siswa">Rekap Siswa</option><option value="guru">Rekap Guru</option></select></div>
@@ -250,7 +251,6 @@
       </div>
     </div>
 
-    <!-- 6. PENGATURAN SESI -->
     <div id="menu-pengaturan" class="section">
       <h3>Pengaturan Sesi & PIN Akses</h3>
       <div style="display:flex; gap:15px; margin-bottom:15px; background:#fff; padding:10px; border-radius:6px; border:1px solid #ddd;">
@@ -270,13 +270,12 @@
   </div>
 </div>
 
-<!-- FOOTER -->
 <div class="footer">
   &copy; 2026 SMP NEGERI 1 SOBANG &bull; Sistem Absensi Terpadu Berbasis QR Barcode
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxPtoHAguwvxm84wECkK9Oop6D58oGnmR2R4_Z8VpdSwyR-RPtfD0vkNhrZ2RIj3oK9/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyBs1p4TVwymrlfaGXYrqKZ0YxaN07hRq1xs8yfMh77iBp2uqJwkVRrdK54tusfRL6T/exec";
 
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
@@ -296,9 +295,7 @@
 
   function toggleSidebar() {
     const sidebar = document.getElementById('appSidebar');
-    const content = document.getElementById('appContent');
     sidebar.classList.toggle('closed');
-    content.classList.toggle('expanded');
   }
 
   function startRealtimeDashboard() {
@@ -394,6 +391,9 @@
     });
     const sesiEl = document.getElementById('realtimeActiveSesi');
     if (sesiEl) sesiEl.innerText = activeSesiLabel;
+
+    const scannerSesiEl = document.getElementById('scannerActiveSesiLabel');
+    if (scannerSesiEl) scannerSesiEl.innerText = activeSesiLabel;
   }
 
   function parseJamToMin(jamStr) {
@@ -493,6 +493,11 @@
     if (el) el.classList.add('active');
     document.getElementById(`menu-${menuName}`).classList.add('active');
 
+    // Auto-close sidebar on mobile after clicking menu item
+    if (window.innerWidth <= 900) {
+      document.getElementById('appSidebar').classList.add('closed');
+    }
+
     if (menuName === 'scanner') setupScannerView();
     if (menuName === 'rekap') loadOpsiKelas();
     if (menuName === 'pengaturan') { loadPengaturanDataFromServer(); }
@@ -502,6 +507,7 @@
     const adminSwitch = document.getElementById('scannerAdminSwitch');
     if (userSession === 'admin' || userSession === 'pengaturan') adminSwitch.style.display = 'block';
     else { adminSwitch.style.display = 'none'; setRole('siswa'); }
+    preloadPinConfig();
   }
 
   function setRole(role) {

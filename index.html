@@ -110,9 +110,6 @@
       .no-print { display: none !important; }
     }
 
-    .libur-item { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
-    .libur-item input { flex: 1; }
-    .libur-item button { width: auto; padding: 8px 12px; }
     .btn-sm { width: auto; padding: 5px 12px; font-size: 12px; }
     .flex-row { display: flex; gap: 10px; align-items: center; }
     .flex-row .form-group { flex: 1; margin-bottom: 0; }
@@ -279,7 +276,7 @@
             <th>Mulai (TW)</th>
             <th>Batas TW (TL)</th>
             <th>Tutup Sesi</th>
-            <th>Absen Otomatis</th>
+            <th>Status Jika Absen</th>
           </tr>
         </thead>
         <tbody id="tablePengaturanBody">
@@ -323,10 +320,10 @@
     <p style="font-size:13px; color:#666; text-align:center;">Masukkan PIN untuk mengakses fitur ini</p>
     <div class="form-group">
       <label>PIN:</label>
-      <input type="password" id="loginPin" placeholder="Masukkan PIN (4 digit untuk Guru, 6 digit untuk Admin)" maxlength="6">
+      <input type="password" id="loginPin" placeholder="Masukkan PIN" maxlength="10">
     </div>
     <div style="font-size:12px; color:#888; margin-bottom:10px;">
-      <span>💡 Guru: 4 digit | Admin: 6 digit</span>
+      <span>💡 Guru: PIN 4 digit | Admin: PIN 6 digit</span>
     </div>
     <button class="btn-primary" onclick="prosesLogin()">Login</button>
     <button class="btn-secondary" style="margin-top:8px;" onclick="tutupLogin()">Batal</button>
@@ -336,14 +333,18 @@
 
 <script>
   // ============ KONFIGURASI ============
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbx-kV_3KdM9Fo8842CU2Sj1KHNcIlZhe8AAvO6IovYdoqVsMTX2e8weeHH2v-pD-FA2/exec";
-  const ADMIN_PIN_SETTINGS = "123456"; // PIN khusus untuk menu pengaturan (6 digit)
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzWiW0l5LiqS31G_XNVQ2Nu-ZIFCIAsU5ERDZMG7__xfTOZnPxenvFohowcjkWRJ7LZ/exec";
   
   // ============ VARIABEL GLOBAL ============
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
   let isCameraOn = false;
   let isProcessing = false;
+  let pinConfig = {
+    pinGuru: '1234',
+    pinAdmin: '123456',
+    pinPengaturan: '456789'
+  };
   let userSession = {
     isLoggedIn: false,
     role: '', // 'guru' atau 'admin'
@@ -356,37 +357,70 @@
     // Set tanggal default
     document.getElementById('izinTanggal').value = new Date().toISOString().split('T')[0];
     
-    // Cek session
-    const savedSession = localStorage.getItem('absensi_session');
-    if (savedSession) {
-      try {
-        const session = JSON.parse(savedSession);
-        userSession = session;
-        if (session.isLoggedIn) {
-          updateUIForRole(session.role);
-          // Buka menu terakhir atau scanner
-          const lastMenu = localStorage.getItem('last_menu') || 'scanner';
-          const btn = document.getElementById(`menu-${lastMenu}-btn`);
-          if (btn && !btn.classList.contains('disabled')) {
-            switchMenu(lastMenu, btn);
-          } else {
-            switchMenu('cari', document.getElementById('menu-cari-btn'));
-          }
+    // Load PIN config dari server
+    loadPinConfig(function() {
+      // Cek session
+      const savedSession = localStorage.getItem('absensi_session');
+      if (savedSession) {
+        try {
+          const session = JSON.parse(savedSession);
+          // Verifikasi PIN dengan server
+          verifySession(session, function(isValid, role) {
+            if (isValid) {
+              userSession = session;
+              updateUIForRole(role);
+              const lastMenu = localStorage.getItem('last_menu') || 'scanner';
+              const btn = document.getElementById(`menu-${lastMenu}-btn`);
+              if (btn && !btn.classList.contains('disabled')) {
+                switchMenu(lastMenu, btn);
+              } else {
+                switchMenu('cari', document.getElementById('menu-cari-btn'));
+              }
+            } else {
+              localStorage.removeItem('absensi_session');
+              setDefaultState();
+            }
+          });
           return;
+        } catch (e) {
+          localStorage.removeItem('absensi_session');
         }
-      } catch (e) {
-        localStorage.removeItem('absensi_session');
       }
-    }
-    
-    // Default: disable semua menu kecuali Cek Data
+      
+      setDefaultState();
+    });
+  });
+
+  function setDefaultState() {
     disableAllMenus();
     document.getElementById('menu-cari-btn').classList.remove('disabled');
     switchMenu('cari', document.getElementById('menu-cari-btn'));
-    
-    // Load kelas untuk rekap
     loadOpsiKelas();
-  });
+  }
+
+  // ============ LOAD PIN CONFIG ============
+  function loadPinConfig(callback) {
+    sendRequest({ action: 'get_pin_config' }, function(res) {
+      if (res.status === 'success') {
+        pinConfig = res.data;
+      }
+      if (callback) callback();
+    });
+  }
+
+  function verifySession(session, callback) {
+    if (!session.pin) {
+      callback(false, null);
+      return;
+    }
+    sendRequest({ action: 'check_login', pin: session.pin }, function(res) {
+      if (res.status === 'success') {
+        callback(true, res.role);
+      } else {
+        callback(false, null);
+      }
+    });
+  }
 
   // ============ FUNGSI LOGIN ============
   function disableAllMenus() {
@@ -414,7 +448,8 @@
       enableAllMenus();
       
       if (role === 'guru') {
-        // Guru hanya bisa akses untuk siswa
+        // Guru: Hanya akses untuk SISWA
+        // Disable menu yang tidak boleh diakses guru
         document.getElementById('menu-pengaturan-btn').classList.add('disabled');
         
         // Set default role ke siswa
@@ -422,7 +457,7 @@
         document.getElementById('btnSiswa').style.background = '#1a73e8';
         document.getElementById('btnGuru').style.background = '#6c757d';
         
-        // Sembunyikan opsi guru di izin
+        // Sembunyikan opsi guru di izin - hanya siswa
         document.getElementById('izinRole').value = 'siswa';
         document.getElementById('izinRole').style.display = 'none';
         document.querySelector('#menu-izin .form-group:first-child label').textContent = 'Peran: Siswa (Otomatis)';
@@ -431,8 +466,12 @@
         document.getElementById('rekapRole').value = 'siswa';
         document.getElementById('rekapRole').disabled = true;
         document.getElementById('rekapKelasContainer').style.display = 'block';
+        
+        // Scanner hanya untuk siswa
+        setRole('siswa');
+        
       } else {
-        // Admin full access
+        // Admin: Full access
         document.getElementById('izinRole').style.display = 'block';
         document.getElementById('izinRole').value = 'siswa';
         document.querySelector('#menu-izin .form-group:first-child label').textContent = 'Peran:';
@@ -440,7 +479,7 @@
         toggleRekapFilter();
       }
       
-      // Cari menu selalu tersedia untuk semua
+      // Cari menu selalu tersedia
       document.getElementById('menu-cari-btn').classList.remove('disabled');
     }
   }
@@ -466,10 +505,11 @@
       return;
     }
     
-    // Cek apakah ini login untuk menu pengaturan (PIN khusus)
     const targetMenu = document.getElementById('loginModal').dataset.targetMenu;
+    
+    // Cek apakah login untuk menu pengaturan
     if (targetMenu === 'pengaturan') {
-      if (pin === ADMIN_PIN_SETTINGS) {
+      if (pin === pinConfig.pinPengaturan) {
         userSession.isLoggedIn = true;
         userSession.role = 'admin';
         userSession.pin = pin;
@@ -497,7 +537,6 @@
         updateUIForRole(res.role);
         tutupLogin();
         
-        // Buka menu yang diminta
         const target = document.getElementById('loginModal').dataset.targetMenu || 'scanner';
         const btn = document.getElementById(`menu-${target}-btn`);
         if (btn && !btn.classList.contains('disabled')) {
@@ -545,7 +584,6 @@
   }
 
   function switchMenu(menuName, btnEl) {
-    // Simpan menu terakhir
     currentMenu = menuName;
     localStorage.setItem('last_menu', menuName);
     
@@ -804,6 +842,10 @@
     showAlert("warning", "Menyimpan pengaturan...");
     sendRequest({ action: 'save_pengaturan', config: config }, function(res) {
       showAlert(res.status, res.message);
+      if (res.status === 'success') {
+        // Reload PIN config
+        loadPinConfig();
+      }
     });
   }
 

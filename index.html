@@ -13,9 +13,10 @@
     h2, h3 { text-align: center; color: #1a73e8; margin-top: 0; }
     
     .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 20px; }
-    .btn-menu { padding: 10px; border: none; background: #e8f0fe; color: #1967d2; font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center; font-size: 13px; }
-    .btn-menu:hover, .btn-menu.active { background: #1a73e8; color: #fff; }
-    .btn-menu.disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-menu { padding: 10px; border: none; background: #e8f0fe; color: #1967d2; font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center; font-size: 13px; transition: all 0.3s; }
+    .btn-menu:hover:not(.disabled) { background: #1a73e8; color: #fff; }
+    .btn-menu.active { background: #1a73e8; color: #fff; }
+    .btn-menu.disabled { opacity: 0.4; cursor: not-allowed; background: #e8f0fe; color: #1967d2; }
     .btn-menu.disabled:hover { background: #e8f0fe; color: #1967d2; }
     
     .section { display: none; margin-top: 15px; }
@@ -25,11 +26,17 @@
     input, select, button { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
     
     .btn-primary { background: #1a73e8; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+    .btn-primary:hover { background: #1557b0; }
     .btn-excel { background: #1d6f42; color: white; border: none; font-weight: bold; cursor: pointer; }
+    .btn-excel:hover { background: #155a34; }
     .btn-pdf { background: #d93025; color: white; border: none; font-weight: bold; cursor: pointer; }
+    .btn-pdf:hover { background: #b5221a; }
     .btn-toggle { background: #34a853; color: white; border: none; font-weight: bold; cursor: pointer; }
     .btn-toggle.off { background: #ea4335; }
     .btn-danger { background: #dc3545; color: white; border: none; font-weight: bold; cursor: pointer; }
+    .btn-danger:hover { background: #c82333; }
+    .btn-secondary { background: #6c757d; color: white; border: none; font-weight: bold; cursor: pointer; }
+    .btn-secondary:hover { background: #5a6268; }
     
     #reader { width: 100%; border-radius: 8px; overflow: hidden; margin-top: 10px; min-height: 220px; background: #111; }
     .table-responsive { overflow-x: auto; margin-top: 15px; }
@@ -71,11 +78,12 @@
       padding: 8px 12px;
       border-radius: 6px;
       font-size: 13px;
-      display: flex;
+      display: none;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
     }
+    .user-info.active { display: flex; }
     .user-info .btn-logout {
       background: #dc3545;
       color: white;
@@ -105,6 +113,9 @@
     .libur-item { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
     .libur-item input { flex: 1; }
     .libur-item button { width: auto; padding: 8px 12px; }
+    .btn-sm { width: auto; padding: 5px 12px; font-size: 12px; }
+    .flex-row { display: flex; gap: 10px; align-items: center; }
+    .flex-row .form-group { flex: 1; margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -113,24 +124,24 @@
   <h2 class="no-print">Sistem Absensi Sekolah</h2>
 
   <!-- User Info -->
-  <div id="userInfo" class="user-info no-print" style="display:none;">
+  <div id="userInfo" class="user-info no-print">
     <span>👤 <span id="userName">User</span> <span class="role-badge" id="userRole">Guru</span></span>
     <button class="btn-logout" onclick="logout()">Logout</button>
   </div>
 
   <!-- MENU DASHBOARD -->
   <div class="menu-grid no-print">
-    <button class="btn-menu active" onclick="switchMenu('scanner', this)" id="menu-scanner-btn">📷 Scanner</button>
-    <button class="btn-menu" onclick="switchMenu('cari', this)" id="menu-cari-btn">🔍 Cek Data</button>
-    <button class="btn-menu" onclick="switchMenu('izin', this)" id="menu-izin-btn">📝 Input Izin</button>
-    <button class="btn-menu" onclick="switchMenu('rekap', this)" id="menu-rekap-btn">📊 Rekap Data</button>
-    <button class="btn-menu" onclick="switchMenu('pengaturan', this)" id="menu-pengaturan-btn">⚙️ Pengaturan</button>
+    <button class="btn-menu" onclick="handleMenuClick('scanner', this)" id="menu-scanner-btn">📷 Scanner</button>
+    <button class="btn-menu active" onclick="handleMenuClick('cari', this)" id="menu-cari-btn">🔍 Cek Data</button>
+    <button class="btn-menu" onclick="handleMenuClick('izin', this)" id="menu-izin-btn">📝 Input Izin</button>
+    <button class="btn-menu" onclick="handleMenuClick('rekap', this)" id="menu-rekap-btn">📊 Rekap Data</button>
+    <button class="btn-menu" onclick="handleMenuClick('pengaturan', this)" id="menu-pengaturan-btn">⚙️ Pengaturan</button>
   </div>
 
   <div id="alert" class="no-print"></div>
 
   <!-- 1. SCANNER QR -->
-  <div id="menu-scanner" class="section active">
+  <div id="menu-scanner" class="section">
     <h3>Scanner QR Barcode</h3>
     <div class="form-group">
       <label>Pilih Sesi Absen:</label>
@@ -152,7 +163,7 @@
   </div>
 
   <!-- 2. CEK KEHADIRAN -->
-  <div id="menu-cari" class="section">
+  <div id="menu-cari" class="section active">
     <h3>Pencarian Data Kehadiran</h3>
     <div class="form-group">
       <label>Peran:</label>
@@ -272,7 +283,7 @@
           </tr>
         </thead>
         <tbody id="tablePengaturanBody">
-          <!-- Populated by JS -->
+          <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
         </tbody>
       </table>
     </div>
@@ -283,7 +294,7 @@
     <h3>Pengaturan Hari Libur</h3>
     <div class="form-group">
       <label>Tanggal Libur:</label>
-      <div style="display:flex; gap:10px;">
+      <div class="flex-row">
         <input type="date" id="liburTanggal" style="flex:1;">
         <button class="btn-primary" onclick="tambahLibur()" style="width:auto; padding:10px 20px;">Tambah</button>
       </div>
@@ -297,7 +308,7 @@
       <table>
         <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Aksi</th></tr></thead>
         <tbody id="tableLiburBody">
-          <tr><td colspan="3" style="text-align:center;">Belum ada data hari libur.</td></tr>
+          <tr><td colspan="3" style="text-align:center;">Loading...</td></tr>
         </tbody>
       </table>
     </div>
@@ -318,15 +329,17 @@
       <span>💡 Guru: 4 digit | Admin: 6 digit</span>
     </div>
     <button class="btn-primary" onclick="prosesLogin()">Login</button>
-    <button style="background:#6c757d; color:white; border:none; padding:10px; border-radius:6px; margin-top:8px; width:100%; cursor:pointer;" onclick="tutupLogin()">Batal</button>
+    <button class="btn-secondary" style="margin-top:8px;" onclick="tutupLogin()">Batal</button>
     <div id="loginError" style="color:#dc3545; font-size:13px; text-align:center; margin-top:8px;"></div>
   </div>
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyZRfgXiMY7cA7sFx0LZ9VKVto3gdm3I1Nv02mFhRfp9P33fcadb_VCF1cJDeyuCayZ/exec";
+  // ============ KONFIGURASI ============
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx-kV_3KdM9Fo8842CU2Sj1KHNcIlZhe8AAvO6IovYdoqVsMTX2e8weeHH2v-pD-FA2/exec";
   const ADMIN_PIN_SETTINGS = "123456"; // PIN khusus untuk menu pengaturan (6 digit)
-
+  
+  // ============ VARIABEL GLOBAL ============
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
   let isCameraOn = false;
@@ -336,25 +349,56 @@
     role: '', // 'guru' atau 'admin'
     pin: ''
   };
+  let currentMenu = 'cari';
 
-  document.getElementById('izinTanggal').value = new Date().toISOString().split('T')[0];
-
-  // --- LOGIN SYSTEM ---
-  function checkLoginStatus() {
-    // Cek localStorage untuk session
+  // ============ INISIALISASI ============
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set tanggal default
+    document.getElementById('izinTanggal').value = new Date().toISOString().split('T')[0];
+    
+    // Cek session
     const savedSession = localStorage.getItem('absensi_session');
     if (savedSession) {
       try {
         const session = JSON.parse(savedSession);
         userSession = session;
-        updateUIForRole(session.role);
-        return true;
+        if (session.isLoggedIn) {
+          updateUIForRole(session.role);
+          // Buka menu terakhir atau scanner
+          const lastMenu = localStorage.getItem('last_menu') || 'scanner';
+          const btn = document.getElementById(`menu-${lastMenu}-btn`);
+          if (btn && !btn.classList.contains('disabled')) {
+            switchMenu(lastMenu, btn);
+          } else {
+            switchMenu('cari', document.getElementById('menu-cari-btn'));
+          }
+          return;
+        }
       } catch (e) {
         localStorage.removeItem('absensi_session');
-        return false;
       }
     }
-    return false;
+    
+    // Default: disable semua menu kecuali Cek Data
+    disableAllMenus();
+    document.getElementById('menu-cari-btn').classList.remove('disabled');
+    switchMenu('cari', document.getElementById('menu-cari-btn'));
+    
+    // Load kelas untuk rekap
+    loadOpsiKelas();
+  });
+
+  // ============ FUNGSI LOGIN ============
+  function disableAllMenus() {
+    document.querySelectorAll('.btn-menu').forEach(btn => {
+      btn.classList.add('disabled');
+    });
+  }
+
+  function enableAllMenus() {
+    document.querySelectorAll('.btn-menu').forEach(btn => {
+      btn.classList.remove('disabled');
+    });
   }
 
   function updateUIForRole(role) {
@@ -362,22 +406,15 @@
       userSession.isLoggedIn = true;
       userSession.role = role;
       
-      document.getElementById('userInfo').style.display = 'flex';
+      const userInfo = document.getElementById('userInfo');
+      userInfo.classList.add('active');
       document.getElementById('userName').textContent = role === 'guru' ? 'Guru' : 'Admin';
       document.getElementById('userRole').textContent = role === 'guru' ? '👨‍🏫 Guru' : '👑 Admin';
       
-      // Enable all menus
-      document.querySelectorAll('.btn-menu').forEach(btn => {
-        btn.classList.remove('disabled');
-      });
+      enableAllMenus();
       
-      // Admin gets full access, Guru limited to student features only
       if (role === 'guru') {
         // Guru hanya bisa akses untuk siswa
-        document.getElementById('menu-scanner-btn').classList.remove('disabled');
-        document.getElementById('menu-cari-btn').classList.remove('disabled');
-        document.getElementById('menu-izin-btn').classList.remove('disabled');
-        document.getElementById('menu-rekap-btn').classList.remove('disabled');
         document.getElementById('menu-pengaturan-btn').classList.add('disabled');
         
         // Set default role ke siswa
@@ -385,10 +422,9 @@
         document.getElementById('btnSiswa').style.background = '#1a73e8';
         document.getElementById('btnGuru').style.background = '#6c757d';
         
-        // Sembunyikan opsi guru di izin dan rekap
+        // Sembunyikan opsi guru di izin
         document.getElementById('izinRole').value = 'siswa';
         document.getElementById('izinRole').style.display = 'none';
-        // Label peran di izin
         document.querySelector('#menu-izin .form-group:first-child label').textContent = 'Peran: Siswa (Otomatis)';
         
         // Rekap hanya siswa
@@ -397,9 +433,6 @@
         document.getElementById('rekapKelasContainer').style.display = 'block';
       } else {
         // Admin full access
-        document.querySelectorAll('.btn-menu').forEach(btn => {
-          btn.classList.remove('disabled');
-        });
         document.getElementById('izinRole').style.display = 'block';
         document.getElementById('izinRole').value = 'siswa';
         document.querySelector('#menu-izin .form-group:first-child label').textContent = 'Peran:';
@@ -413,11 +446,11 @@
   }
 
   function showLoginModal(targetMenu) {
-    document.getElementById('loginModal').classList.add('active');
+    const modal = document.getElementById('loginModal');
+    modal.classList.add('active');
     document.getElementById('loginPin').value = '';
     document.getElementById('loginError').textContent = '';
-    // Simpan target menu setelah login
-    document.getElementById('loginModal').dataset.targetMenu = targetMenu;
+    modal.dataset.targetMenu = targetMenu;
   }
 
   function tutupLogin() {
@@ -426,8 +459,10 @@
 
   function prosesLogin() {
     const pin = document.getElementById('loginPin').value.trim();
+    const errorEl = document.getElementById('loginError');
+    
     if (!pin) {
-      document.getElementById('loginError').textContent = 'Masukkan PIN!';
+      errorEl.textContent = 'Masukkan PIN!';
       return;
     }
     
@@ -435,7 +470,6 @@
     const targetMenu = document.getElementById('loginModal').dataset.targetMenu;
     if (targetMenu === 'pengaturan') {
       if (pin === ADMIN_PIN_SETTINGS) {
-        // Login ke pengaturan
         userSession.isLoggedIn = true;
         userSession.role = 'admin';
         userSession.pin = pin;
@@ -448,13 +482,13 @@
         showAlert('success', 'Login ke Pengaturan berhasil!');
         return;
       } else {
-        document.getElementById('loginError').textContent = 'PIN Pengaturan salah!';
+        errorEl.textContent = 'PIN Pengaturan salah!';
         return;
       }
     }
     
     // Login normal
-    sendRequest({ action: 'login', pin: pin }, res => {
+    sendRequest({ action: 'login', pin: pin }, function(res) {
       if (res.status === 'success') {
         userSession.isLoggedIn = true;
         userSession.role = res.role;
@@ -466,11 +500,15 @@
         // Buka menu yang diminta
         const target = document.getElementById('loginModal').dataset.targetMenu || 'scanner';
         const btn = document.getElementById(`menu-${target}-btn`);
-        if (btn) switchMenu(target, btn);
+        if (btn && !btn.classList.contains('disabled')) {
+          switchMenu(target, btn);
+        } else {
+          switchMenu('cari', document.getElementById('menu-cari-btn'));
+        }
         
         showAlert('success', res.message);
       } else {
-        document.getElementById('loginError').textContent = res.message;
+        errorEl.textContent = res.message;
       }
     });
   }
@@ -478,39 +516,41 @@
   function logout() {
     localStorage.removeItem('absensi_session');
     userSession = { isLoggedIn: false, role: '', pin: '' };
-    document.getElementById('userInfo').style.display = 'none';
+    document.getElementById('userInfo').classList.remove('active');
     
-    // Disable semua menu kecuali Cek Data
-    document.querySelectorAll('.btn-menu').forEach(btn => {
-      btn.classList.add('disabled');
-    });
+    if (isCameraOn) stopCamera();
+    
+    disableAllMenus();
     document.getElementById('menu-cari-btn').classList.remove('disabled');
     
-    // Kembali ke menu cari
     switchMenu('cari', document.getElementById('menu-cari-btn'));
     showAlert('info', 'Anda telah logout. Hanya menu Cek Data yang tersedia.');
   }
 
-  // --- MENU NAVIGATION ---
-  function switchMenu(menuName, btnEl) {
-    // Validasi akses
-    const isCariMenu = menuName === 'cari';
-    const isLoggedIn = userSession.isLoggedIn;
-    
-    if (!isCariMenu && !isLoggedIn) {
+  // ============ MENU NAVIGATION ============
+  function handleMenuClick(menuName, btnEl) {
+    // Jika menu sudah disabled, tampilkan login
+    if (btnEl.classList.contains('disabled')) {
       showLoginModal(menuName);
       return;
     }
     
-    if (isLoggedIn) {
-      // Cek role untuk akses
-      if (userSession.role === 'guru' && menuName === 'pengaturan') {
-        showAlert('warning', 'Guru tidak memiliki akses ke Pengaturan!');
-        return;
-      }
+    // Jika menu pengaturan dan bukan admin
+    if (menuName === 'pengaturan' && userSession.isLoggedIn && userSession.role !== 'admin') {
+      showLoginModal(menuName);
+      return;
     }
     
+    switchMenu(menuName, btnEl);
+  }
+
+  function switchMenu(menuName, btnEl) {
+    // Simpan menu terakhir
+    currentMenu = menuName;
+    localStorage.setItem('last_menu', menuName);
+    
     if (isCameraOn) stopCamera();
+    
     document.querySelectorAll('.btn-menu').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     
@@ -518,8 +558,14 @@
     document.getElementById(`menu-${menuName}`).classList.add('active');
     hideAlert();
 
-    if (menuName === 'rekap') { loadOpsiKelas(); loadRekap(); }
-    if (menuName === 'pengaturan') { loadPengaturan(); loadLibur(); }
+    if (menuName === 'rekap') { 
+      loadOpsiKelas(); 
+      loadRekap(); 
+    }
+    if (menuName === 'pengaturan') { 
+      loadPengaturan(); 
+      loadLibur(); 
+    }
   }
 
   function setRole(role) {
@@ -538,10 +584,17 @@
     container.style.display = (r === 'siswa') ? 'block' : 'none';
   }
 
-  // --- SCANNER ---
-  function toggleCamera() { isCameraOn ? stopCamera() : startCamera(); }
+  // ============ SCANNER ============
+  function toggleCamera() { 
+    isCameraOn ? stopCamera() : startCamera(); 
+  }
 
   function startCamera() {
+    if (html5QrcodeScanner) {
+      html5QrcodeScanner.clear();
+      html5QrcodeScanner = null;
+    }
+    
     html5QrcodeScanner = new Html5Qrcode("reader");
     html5QrcodeScanner.start(
       { facingMode: "environment" },
@@ -552,18 +605,25 @@
       const btn = document.getElementById('btnCameraToggle');
       btn.innerText = "Tutup Kamera";
       btn.classList.add('off');
-    }).catch(err => showAlert("danger", "Kamera gagal dibuka: " + err));
+    }).catch(function(err) {
+      showAlert("danger", "Kamera gagal dibuka: " + err);
+      isCameraOn = false;
+    });
   }
 
   function stopCamera() {
     if (html5QrcodeScanner) {
       html5QrcodeScanner.stop().then(() => {
         html5QrcodeScanner.clear();
+        html5QrcodeScanner = null;
         isCameraOn = false;
         const btn = document.getElementById('btnCameraToggle');
         btn.innerText = "Buka Kamera";
         btn.classList.remove('off');
-      }).catch(err => console.error(err));
+      }).catch(function(err) {
+        console.error(err);
+        isCameraOn = false;
+      });
     }
   }
 
@@ -577,16 +637,19 @@
       role: currentRole,
       code: code,
       sesi: document.getElementById('sesiSelect').value
-    }, res => {
+    }, function(res) {
       showAlert(res.status, res.message);
-      setTimeout(() => { isProcessing = false; }, 3000);
+      setTimeout(function() { isProcessing = false; }, 3000);
     });
   }
 
-  // --- INPUT IZIN ---
+  // ============ INPUT IZIN ============
   function simpanIzin() {
     const id = document.getElementById('izinId').value;
-    if (!id) return showAlert("danger", "ID/NISN/NIP wajib diisi!");
+    if (!id) {
+      showAlert("danger", "ID/NISN/NIP wajib diisi!");
+      return;
+    }
 
     showAlert("warning", "Menyimpan data...");
     sendRequest({
@@ -596,13 +659,17 @@
       tanggal: document.getElementById('izinTanggal').value,
       status: document.getElementById('izinStatus').value,
       keterangan: document.getElementById('izinKet').value
-    }, res => {
+    }, function(res) {
       showAlert(res.status, res.message);
-      if (res.status === 'success') document.getElementById('izinId').value = '';
+      if (res.status === 'success') {
+        document.getElementById('izinId').value = '';
+        document.getElementById('izinKet').value = '';
+      }
     });
   }
 
-  // --- CARI KEHADIRAN ---  function cariKehadiran() {
+  // ============ CARI KEHADIRAN ============
+  function cariKehadiran() {
     showAlert("warning", "Mencari data...");
     sendRequest({
       action: 'cari_kehadiran',
@@ -610,7 +677,7 @@
       keyword: document.getElementById('cariKeyword').value,
       tglMulai: document.getElementById('cariTglMulai').value,
       tglSelesai: document.getElementById('cariTglSelesai').value
-    }, res => {
+    }, function(res) {
       hideAlert();
       const tbody = document.getElementById('tableCariBody');
       tbody.innerHTML = '';
@@ -619,33 +686,39 @@
         return;
       }
 
-      res.data.forEach(r => {
+      res.data.forEach(function(r) {
         tbody.innerHTML += `<tr><td>${r.timestamp}</td><td>${r.peran}</td><td>${r.id}</td><td>${r.nama}</td><td>${r.sesi}</td></tr>`;
       });
+      showAlert('success', `Ditemukan ${res.data.length} data.`);
     });
   }
 
-  // --- REKAP KEHADIRAN & EXPORT ---
+  // ============ REKAP KEHADIRAN ============
   function loadOpsiKelas() {
-    sendRequest({ action: 'get_kelas' }, res => {
+    sendRequest({ action: 'get_kelas' }, function(res) {
       if (res.status === 'success') {
         const select = document.getElementById('rekapKelas');
         select.innerHTML = '<option value="">-- Semua Kelas --</option>';
-        res.data.forEach(k => select.innerHTML += `<option value="${k}">${k}</option>`);
+        if (res.data) {
+          res.data.forEach(function(k) {
+            select.innerHTML += `<option value="${k}">${k}</option>`;
+          });
+        }
       }
     });
   }
 
   function loadRekap() {
-    showAlert("warning", "Menghitung rekap...");
     const role = document.getElementById('rekapRole').value;
+    showAlert("warning", "Menghitung rekap...");
+    
     sendRequest({
       action: 'rekap_kehadiran',
       role: role,
       kelas: document.getElementById('rekapKelas').value,
       tglMulai: document.getElementById('rekapTglMulai').value,
       tglSelesai: document.getElementById('rekapTglSelesai').value
-    }, res => {
+    }, function(res) {
       hideAlert();
       const tbody = document.getElementById('tableRekapBody');
       tbody.innerHTML = '';
@@ -656,7 +729,7 @@
         return;
       }
 
-      res.data.forEach(s => {
+      res.data.forEach(function(s) {
         tbody.innerHTML += `
           <tr>
             <td>${s.id}</td>
@@ -680,16 +753,16 @@
     XLSX.writeFile(wb, `Rekap_Kehadiran_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
-  // --- PENGATURAN SESI ---
+  // ============ PENGATURAN SESI ============
   function loadPengaturan() {
-    sendRequest({ action: 'get_pengaturan' }, res => {
+    sendRequest({ action: 'get_pengaturan' }, function(res) {
       const tbody = document.getElementById('tablePengaturanBody');
       tbody.innerHTML = '';
       if (!res.data || res.data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Data pengaturan kosong.</td></tr>';
         return;
       }
-      res.data.forEach((p, idx) => {
+      res.data.forEach(function(p) {
         tbody.innerHTML += `
           <tr>
             <td><b>${p.sesi}</b><input type="hidden" class="p-sesi" value="${p.sesi}"></td>
@@ -710,11 +783,11 @@
   function savePengaturan() {
     let config = [];
     const rows = document.querySelectorAll('#tablePengaturanBody tr');
-    rows.forEach(r => {
-      const sesi = r.querySelector('.p-sesi');
-      if (sesi) {
+    rows.forEach(function(r) {
+      const sesiInput = r.querySelector('.p-sesi');
+      if (sesiInput) {
         config.push({
-          sesi: sesi.value,
+          sesi: sesiInput.value,
           mulai: r.querySelector('.p-mulai').value,
           batasTW: r.querySelector('.p-tw').value,
           tutup: r.querySelector('.p-tutup').value,
@@ -729,26 +802,26 @@
     }
 
     showAlert("warning", "Menyimpan pengaturan...");
-    sendRequest({ action: 'save_pengaturan', config: config }, res => {
+    sendRequest({ action: 'save_pengaturan', config: config }, function(res) {
       showAlert(res.status, res.message);
     });
   }
 
-  // --- HARI LIBUR ---
+  // ============ HARI LIBUR ============
   function loadLibur() {
-    sendRequest({ action: 'get_libur' }, res => {
+    sendRequest({ action: 'get_libur' }, function(res) {
       const tbody = document.getElementById('tableLiburBody');
       tbody.innerHTML = '';
       if (!res.data || res.data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Belum ada data hari libur.</td></tr>';
         return;
       }
-      res.data.forEach(item => {
+      res.data.forEach(function(item) {
         tbody.innerHTML += `
           <tr>
             <td>${item.tanggal}</td>
             <td>${item.keterangan || '-'}</td>
-            <td><button class="btn-danger" style="padding:4px 12px; width:auto;" onclick="hapusLibur('${item.tanggal}')">Hapus</button></td>
+            <td><button class="btn-danger btn-sm" onclick="hapusLibur('${item.tanggal}')">Hapus</button></td>
           </tr>`;
       });
     });
@@ -765,20 +838,17 @@
     
     showAlert("warning", "Menyimpan data libur...");
     
-    // Ambil data libur existing
-    sendRequest({ action: 'get_libur' }, res => {
+    sendRequest({ action: 'get_libur' }, function(res) {
       let liburList = res.data || [];
-      // Cek duplikasi
-      if (liburList.some(item => item.tanggal === tanggal)) {
+      if (liburList.some(function(item) { return item.tanggal === tanggal; })) {
         showAlert("danger", "Tanggal tersebut sudah terdaftar sebagai hari libur!");
         return;
       }
       
       liburList.push({ tanggal: tanggal, keterangan: keterangan });
-      // Sort by date
-      liburList.sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+      liburList.sort(function(a, b) { return a.tanggal.localeCompare(b.tanggal); });
       
-      sendRequest({ action: 'save_libur', libur: liburList }, res => {
+      sendRequest({ action: 'save_libur', libur: liburList }, function(res) {
         showAlert(res.status, res.message);
         if (res.status === 'success') {
           document.getElementById('liburTanggal').value = '';
@@ -793,24 +863,24 @@
     if (!confirm(`Hapus hari libur tanggal ${tanggal}?`)) return;
     
     showAlert("warning", "Menghapus data libur...");
-    sendRequest({ action: 'delete_libur', tanggal: tanggal }, res => {
+    sendRequest({ action: 'delete_libur', tanggal: tanggal }, function(res) {
       showAlert(res.status, res.message);
       if (res.status === 'success') loadLibur();
     });
   }
 
-  // --- HELPER AJAX ---
+  // ============ HELPER AJAX ============
   function sendRequest(payload, callback) {
     fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload)
     })
-    .then(r => r.json())
-    .then(res => {
+    .then(function(response) { return response.json(); })
+    .then(function(res) {
       if (callback) callback(res);
     })
-    .catch(err => {
+    .catch(function(err) {
       showAlert("danger", "Gagal terhubung ke server. Periksa koneksi internet.");
       console.error(err);
       if (callback) callback({ status: "error", message: err.toString() });
@@ -822,41 +892,14 @@
     alertDiv.className = `alert-${type}`;
     alertDiv.innerText = message;
     alertDiv.style.display = 'block';
-    // Auto hide after 5 seconds for success/info
     if (type === 'success' || type === 'info') {
       setTimeout(hideAlert, 5000);
     }
   }
 
-  function hideAlert() { document.getElementById('alert').style.display = 'none'; }
-
-  // --- INIT ---
-  // Default: disable semua menu kecuali Cek Data
-  document.addEventListener('DOMContentLoaded', function() {
-    // Cek session
-    const hasSession = checkLoginStatus();
-    
-    if (!hasSession) {
-      // Disable semua menu kecuali Cek Data
-      document.querySelectorAll('.btn-menu').forEach(btn => {
-        btn.classList.add('disabled');
-      });
-      document.getElementById('menu-cari-btn').classList.remove('disabled');
-      // Set default ke Cek Data
-      switchMenu('cari', document.getElementById('menu-cari-btn'));
-    } else {
-      // Update UI based on role
-      updateUIForRole(userSession.role);
-      // Buka menu terakhir atau scanner
-      switchMenu('scanner', document.getElementById('menu-scanner-btn'));
-    }
-    
-    // Set default peran ke siswa
-    setRole('siswa');
-    
-    // Load kelas untuk rekap
-    loadOpsiKelas();
-  });
+  function hideAlert() { 
+    document.getElementById('alert').style.display = 'none'; 
+  }
 
   // Enter key untuk login
   document.getElementById('loginPin').addEventListener('keypress', function(e) {

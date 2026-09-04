@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi Online</title>
+    <!-- QuaggaJS untuk Barcode Scanner -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        h1 span {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .role-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .role-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .role-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        #scanner {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            pointer-events: none;
+        }
+        
+        .scanner-overlay::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            width: 30px;
+            height: 30px;
+            border-top: 4px solid #00ff88;
+            border-left: 4px solid #00ff88;
+        }
+        
+        .scanner-overlay::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 30px;
+            height: 30px;
+            border-bottom: 4px solid #00ff88;
+            border-right: 4px solid #00ff88;
+        }
+        
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+            animation: scan 2s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            display: none;
+        }
+        
+        .result-box.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-box.success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+        
+        .result-box.error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+        
+        .result-box h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .result-box .info-item {
+            padding: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .result-box .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-box .label {
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .result-box .value {
+            color: #333;
+        }
+        
+        .btn-absen {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+        
+        .btn-absen:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-absen:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .manual-input {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f1f3f5;
+            border-radius: 10px;
+        }
+        
+        .manual-input h4 {
+            margin-bottom: 10px;
+            color: #666;
+        }
+        
+        .manual-input input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .manual-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .manual-input button {
+            width: 100%;
+            padding: 12px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .manual-input button:hover {
+            background: #5a6268;
+        }
+        
+        .status-text {
+            text-align: center;
+            color: #666;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .status-text .loading {
+            color: #667eea;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 <span>Absensi Online</span></h1>
+        
+        <!-- Role Selector -->
+        <div class="role-selector">
+            <button class="role-btn active" data-role="siswa" onclick="setRole('siswa')">🎓 Siswa</button>
+            <button class="role-btn" data-role="guru" onclick="setRole('guru')">👨‍🏫 Guru</button>
+        </div>
+        
+        <!-- Scanner -->
+        <div class="scanner-container">
+            <div id="scanner"></div>
+            <div class="scanner-overlay"></div>
+            <div class="scan-line"></div>
+        </div>
+        
+        <!-- Status -->
+        <p class="status-text" id="statusText">🔄 Menyiapkan kamera...</p>
+        
+        <!-- Result Box -->
+        <div class="result-box" id="resultBox">
+            <h3 id="resultTitle">✅ Data Ditemukan</h3>
+            <div id="resultContent"></div>
+            <button class="btn-absen" id="btnAbsen" onclick="prosesAbsen()">
+                ✅ Absen Sekarang
+            </button>
+        </div>
+        
+        <!-- Manual Input -->
+        <div class="manual-input">
+            <h4>⌨️ Input Manual</h4>
+            <input type="text" id="manualCode" placeholder="Masukkan NISN/NIP..." maxlength="18">
+            <button onclick="cekManual()">🔍 Cek Data</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== KONFIGURASI ====================
+        // Ganti dengan URL Web App dari Google Apps Script Anda
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzomDI17Y4UdlhZyxDYBAJov0hS3pUDnt1icrWzfif3lJFjnin_1JsUnf1rM-9kh_QeTg/exec';
+        
+        let currentRole = 'siswa';
+        let scannedData = null;
+        let isScanning = false;
+        
+        // ==================== SET ROLE ====================
+        function setRole(role) {
+            currentRole = role;
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.role === role);
+            });
+            
+            // Reset
+            scannedData = null;
+            document.getElementById('resultBox').classList.remove('show');
+            document.getElementById('manualCode').value = '';
+            
+            // Restart scanner
+            if (isScanning) {
+                stopScanner();
+                startScanner();
+            }
+        }
+        
+        // ==================== START SCANNER ====================
+        function startScanner() {
+            isScanning = true;
+            document.getElementById('statusText').innerHTML = '📷 Menyiapkan kamera...';
+            
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#scanner'),
+                    constraints: {
+                        facingMode: "environment"
+                    }
+                },
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader",
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "code_93_reader",
+                        "codabar_reader",
+                        "upc_reader",
+                        "upc_e_reader",
+                        "i2of5_reader",
+                        "2of5_reader"
+                    ]
+                }
+            }, function(err) {
+                if (err) {
+                    document.getElementById('statusText').innerHTML = '❌ Gagal mengakses kamera: ' + err;
+                    console.error(err);
+                    return;
+                }
+                Quagga.start();
+                document.getElementById('statusText').innerHTML = '📸 Arahkan kamera ke barcode';
+            });
+            
+            Quagga.onDetected(function(data) {
+                const code = data.codeResult.code;
+                handleBarcodeDetected(code);
+            });
+        }
+        
+        // ==================== STOP SCANNER ====================
+        function stopScanner() {
+            isScanning = false;
+            Quagga.stop();
+        }
+        
+        // ==================== HANDLE BARCODE ====================
+        function handleBarcodeDetected(code) {
+            // Nonaktifkan sementara untuk menghindari double scan
+            Quagga.pause();
+            
+            // Validasi panjang
+            if (currentRole === 'siswa' && code.length !== 10) {
+                showResult(false, '❌ NISN harus 10 digit', 'Panjang NISN: ' + code.length + ' digit');
+                setTimeout(() => Quagga.resume(), 2000);
+                return;
+            }
+            
+            if (currentRole === 'guru' && code.length !== 18) {
+                showResult(false, '❌ NIP harus 18 digit', 'Panjang NIP: ' + code.length + ' digit');
+                setTimeout(() => Quagga.resume(), 2000);
+                return;
+            }
+            
+            // Cek data
+            cekData(code);
+            
+            // Resume scanner setelah 3 detik
+            setTimeout(() => {
+                if (isScanning) Quagga.resume();
+            }, 3000);
+        }
+        
+        // ==================== CEK DATA ====================
+        function cekData(code) {
+            document.getElementById('statusText').innerHTML = '⏳ Memeriksa data...';
+            
+            const endpoint = currentRole === 'siswa' ? 'cekSiswa' : 'cekGuru';
+            const param = currentRole === 'siswa' ? 'nisn' : 'nip';
+            
+            fetch(`${API_URL}?action=${endpoint}&${param}=${code}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'found') {
+                        scannedData = {
+                            code: code,
+                            data: data
+                        };
+                        showResult(true, '✅ Data Ditemukan', data);
+                        document.getElementById('statusText').innerHTML = '✅ Siap absen';
+                    } else {
+                        showResult(false, '❌ Data Tidak Ditemukan', data.message || 'Tidak terdaftar');
+                        document.getElementById('statusText').innerHTML = '❌ Data tidak ditemukan';
+                    }
+                })
+                .catch(error => {
+                    showResult(false, '❌ Error', error.message);
+                    document.getElementById('statusText').innerHTML = '❌ Error koneksi';
+                });
+        }
+        
+        // ==================== SHOW RESULT ====================
+        function showResult(success, title, content) {
+            const box = document.getElementById('resultBox');
+            const titleEl = document.getElementById('resultTitle');
+            const contentEl = document.getElementById('resultContent');
+            
+            box.className = 'result-box show ' + (success ? 'success' : 'error');
+            titleEl.textContent = title;
+            
+            if (success && content.data) {
+                const data = content.data;
+                let html = '';
+                for (const [key, value] of Object.entries(data)) {
+                    if (key !== 'status') {
+                        html += `<div class="info-item">
+                            <span class="label">${key.toUpperCase()}</span>
+                            <span class="value">${value}</span>
+                        </div>`;
+                    }
+                }
+                contentEl.innerHTML = html;
+                document.getElementById('btnAbsen').style.display = 'block';
+            } else {
+                contentEl.innerHTML = `<p style="color:#666;">${content}</p>`;
+                document.getElementById('btnAbsen').style.display = 'none';
+                scannedData = null;
+            }
+        }
+        
+        // ==================== PROSES ABSEN ====================
+        function prosesAbsen() {
+            if (!scannedData) return;
+            
+            const btn = document.getElementById('btnAbsen');
+            btn.disabled = true;
+            btn.textContent = '⏳ Memproses...';
+            
+            const endpoint = currentRole === 'siswa' ? 'absenSiswa' : 'absenGuru';
+            const param = currentRole === 'siswa' ? 'nisn' : 'nip';
+            
+            fetch(`${API_URL}?action=${endpoint}&${param}=${scannedData.code}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showResult(true, '✅ Absen Berhasil!', {
+                            data: {
+                                'Status': 'Hadir',
+                                'Waktu': data.data.waktu,
+                                'Nama': data.data.nama
+                            }
+                        });
+                        document.getElementById('statusText').innerHTML = '✅ Absen berhasil!';
+                        scannedData = null;
+                    } else {
+                        showResult(false, '❌ Gagal Absen', data.message);
+                        document.getElementById('statusText').innerHTML = '❌ ' + data.message;
+                    }
+                })
+                .catch(error => {
+                    showResult(false, '❌ Error', error.message);
+                    document.getElementById('statusText').innerHTML = '❌ Error koneksi';
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.textContent = '✅ Absen Sekarang';
+                });
+        }
+        
+        // ==================== CEK MANUAL ====================
+        function cekManual() {
+            const code = document.getElementById('manualCode').value.trim();
+            if (!code) {
+                alert('Masukkan NISN/NIP terlebih dahulu!');
+                return;
+            }
+            
+            if (currentRole === 'siswa' && code.length !== 10) {
+                alert('NISN harus 10 digit!');
+                return;
+            }
+            
+            if (currentRole === 'guru' && code.length !== 18) {
+                alert('NIP harus 18 digit!');
+                return;
+            }
+            
+            cekData(code);
+        }
+        
+        // ==================== INIT ====================
+        window.onload = function() {
+            startScanner();
+            
+            // Enter key untuk input manual
+            document.getElementById('manualCode').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    cekManual();
+                }
+            });
+        };
+        
+        // Cleanup saat page ditutup
+        window.onbeforeunload = function() {
+            stopScanner();
+        };
+    </script>
+</body>
+</html>

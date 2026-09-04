@@ -28,6 +28,7 @@
     .btn-pdf { background: #d93025; color: white; border: none; font-weight: bold; cursor: pointer; }
     .btn-toggle { background: #34a853; color: white; border: none; font-weight: bold; cursor: pointer; }
     .btn-toggle.off { background: #ea4335; }
+    .btn-logout { background: #d93025; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 15px; }
     
     #reader { width: 100%; border-radius: 8px; overflow: hidden; margin-top: 10px; min-height: 220px; background: #111; }
     .table-responsive { overflow-x: auto; margin-top: 15px; }
@@ -89,33 +90,25 @@
   <div id="menu-scanner" class="section">
     <h3>Scanner QR Barcode</h3>
     
-    <!-- Tampilan Sesi Real-time untuk Guru -->
-    <div id="scannerGuruView" style="display:none; background:#e8f0fe; padding:12px; border-radius:8px; margin-bottom:15px; text-align:center;">
+    <!-- Tampilan Sesi Real-time -->
+    <div style="background:#e8f0fe; padding:12px; border-radius:8px; margin-bottom:15px; text-align:center;">
       <span style="font-size:13px; color:#555;">Sesi Yang Sedang Berlangsung:</span>
       <h4 id="realtimeActiveSesi" style="margin:5px 0 0 0; color:#1a73e8;">Memuat Sesi...</h4>
     </div>
 
-    <!-- Pilihan Sesi & Peran untuk Admin/Pengaturan -->
-    <div id="scannerAdminView">
-      <div class="form-group">
-        <label>Pilih Sesi Absen:</label>
-        <select id="sesiSelect">
-          <option value="Sesi 1">Sesi 1</option>
-          <option value="Sesi 2">Sesi 2</option>
-          <option value="Sesi 3">Sesi 3</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Peran:</label>
-        <div style="display:flex; gap:10px;" id="roleButtonContainer">
-          <button type="button" id="btnSiswa" class="btn-primary" onclick="setRole('siswa')">Siswa</button>
-          <button type="button" id="btnGuru" style="background:#6c757d; color:white; border:none;" onclick="setRole('guru')">Guru</button>
-        </div>
+    <!-- Tombol Switch Siswa & Guru khusus Admin -->
+    <div id="scannerAdminSwitch" class="form-group" style="display:none;">
+      <label>Peran Absen:</label>
+      <div style="display:flex; gap:10px;">
+        <button type="button" id="btnSiswaAdmin" class="btn-primary" onclick="setRole('siswa')">Siswa</button>
+        <button type="button" id="btnGuruAdmin" style="background:#6c757d; color:white; border:none;" onclick="setRole('guru')">Guru</button>
       </div>
     </div>
 
     <button id="btnCameraToggle" class="btn-toggle" onclick="toggleCamera()">Buka Kamera</button>
     <div id="reader"></div>
+
+    <button class="btn-logout" onclick="logoutSession()">Keluar / Logout Akun</button>
   </div>
 
   <!-- 2. CEK KEHADIRAN -->
@@ -148,16 +141,15 @@
   <!-- 3. INPUT IZIN / SAKIT -->
   <div id="menu-izin" class="section">
     <h3>Input Izin / Sakit Manual</h3>
-    <div class="form-group">
+    <div class="form-group" id="izinRoleContainer">
       <label>Peran:</label>
       <select id="izinRole">
         <option value="siswa">Siswa</option>
-        <option value="guru">Guru</option>
       </select>
     </div>
     <div class="form-group">
-      <label>ID (NISN / NIP):</label>
-      <input type="text" id="izinId" placeholder="Masukkan NISN atau NIP">
+      <label id="labelIzinId">ID (NISN):</label>
+      <input type="text" id="izinId" placeholder="Masukkan NISN">
     </div>
     <div class="form-group"><label>Tanggal:</label><input type="date" id="izinTanggal"></div>
     <div class="form-group">
@@ -170,6 +162,8 @@
     </div>
     <div class="form-group"><label>Keterangan:</label><input type="text" id="izinKet" placeholder="Alasan..."></div>
     <button class="btn-primary" onclick="simpanIzin()">Simpan Data</button>
+
+    <button class="btn-logout" onclick="logoutSession()">Keluar / Logout Akun</button>
   </div>
 
   <!-- 4. REKAP KEHADIRAN -->
@@ -269,12 +263,14 @@
       </table>
     </div>
     <button class="btn-primary" style="margin-top:10px;" onclick="saveLibur()">Simpan Data Hari Libur ke Server</button>
+
+    <button class="btn-logout" onclick="logoutSession()">Keluar / Logout Akun</button>
   </div>
 
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxgxp5mACY77l2CQH9PZfBsZBB9MrJA6LxWkeXt4elZ40ne6vdhFZPR-YgSasCtLnHc/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxT3gzaXtaaUxveTmoqiuVt75KCQZh6CM2Uu6ImpfpjLvv2x5FuLxc9bNeMoIZw25vZ/exec";
 
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
@@ -285,6 +281,7 @@
   let globalPengaturanData = [];
   let globalLiburList = [];
   let realtimeTimer = null;
+  let currentActiveSesiName = "";
 
   document.getElementById('izinTanggal').value = new Date().toISOString().split('T')[0];
 
@@ -331,9 +328,26 @@
     });
   }
 
+  function logoutSession() {
+    if (isCameraOn) stopCamera();
+    if (realtimeTimer) clearInterval(realtimeTimer);
+    userSession = 'tamu';
+    currentRole = 'siswa';
+    
+    document.getElementById('userRoleBadge').innerText = "Status: Siswa / Tamu";
+    document.querySelectorAll('.menu-grid button').forEach(b => b.classList.add('locked'));
+    document.getElementById('menuBtn-cari').classList.remove('locked');
+
+    // Pindah otomatis ke menu Cek Data
+    const cariBtn = document.getElementById('menuBtn-cari');
+    switchMenu('cari', cariBtn);
+    alert("Berhasil keluar/logout.");
+  }
+
   function applyRoleAccessUI(role) {
     const badge = document.getElementById('userRoleBadge');
-    const btnGuruElem = document.getElementById('btnGuru');
+    const izinRoleSelect = document.getElementById('izinRole');
+    const izinContainer = document.getElementById('izinRoleContainer');
 
     if (role === 'guru') {
       badge.innerText = "Status: Guru (Akses Terbatas)";
@@ -341,7 +355,9 @@
       document.getElementById('menuBtn-izin').classList.remove('locked');
       document.getElementById('menuBtn-rekap').classList.remove('locked');
       
-      if (btnGuruElem) btnGuruElem.style.display = 'none';
+      // Guru hanya bisa input izin untuk siswa
+      izinContainer.style.display = 'none';
+      izinRoleSelect.value = 'siswa';
       setRole('siswa');
     } else if (role === 'admin' || role === 'pengaturan') {
       badge.innerText = (role === 'admin') ? "Status: Admin Sekolah" : "Status: Super Admin (Pengaturan)";
@@ -353,7 +369,12 @@
         document.getElementById('menuBtn-rekap').classList.remove('locked');
       }
       
-      if (btnGuruElem) btnGuruElem.style.display = 'block';
+      // Admin bisa memilih input izin siswa atau guru
+      izinContainer.style.display = 'block';
+      izinRoleSelect.innerHTML = `
+        <option value="siswa">Siswa</option>
+        <option value="guru">Guru</option>
+      `;
     }
   }
 
@@ -369,7 +390,7 @@
     hideAlert();
 
     if (menuName === 'scanner') {
-      setupScannerRoleView();
+      setupScannerView();
     }
     if (menuName === 'rekap') loadOpsiKelas();
     if (menuName === 'pengaturan') {
@@ -378,20 +399,16 @@
     }
   }
 
-  function setupScannerRoleView() {
-    const isGuruOnly = (userSession === 'guru');
-    const guruView = document.getElementById('scannerGuruView');
-    const adminView = document.getElementById('scannerAdminView');
-
-    if (isGuruOnly) {
-      guruView.style.display = 'block';
-      adminView.style.display = 'none';
-      updateRealtimeSesiGuru();
-      realtimeTimer = setInterval(updateRealtimeSesiGuru, 10000);
+  function setupScannerView() {
+    const adminSwitch = document.getElementById('scannerAdminSwitch');
+    if (userSession === 'admin' || userSession === 'pengaturan') {
+      adminSwitch.style.display = 'block';
     } else {
-      guruView.style.display = 'none';
-      adminView.style.display = 'block';
+      adminSwitch.style.display = 'none';
+      setRole('siswa');
     }
+    updateRealtimeSesi();
+    realtimeTimer = setInterval(updateRealtimeSesi, 10000);
   }
 
   function parseJamToMin(jamStr) {
@@ -400,31 +417,52 @@
     return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
   }
 
-  function updateRealtimeSesiGuru() {
+  function updateRealtimeSesi() {
     sendRequest({ action: 'get_pengaturan' }, res => {
       if (res.status !== 'success') return;
       const now = new Date();
       const currentMin = now.getHours() * 60 + now.getMinutes();
-      let activeSesi = "Tidak Ada Sesi Aktif Saat Ini";
+      let activeSesiLabel = "Tidak Ada Sesi Aktif Saat Ini";
+      currentActiveSesiName = "";
 
       res.data.forEach(p => {
         if (p.sesi.startsWith('Sesi')) {
           const mulai = parseJamToMin(p.mulai);
           const tutup = parseJamToMin(p.tutup);
           if (currentMin >= mulai && currentMin <= tutup) {
-            activeSesi = `${p.sesi} (Berlangsung Pukul ${p.mulai} - ${p.tutup})`;
+            activeSesiLabel = `${p.sesi} (Berlangsung Pukul ${p.mulai} - ${p.tutup})`;
+            currentActiveSesiName = p.sesi;
           }
         }
       });
-      document.getElementById('realtimeActiveSesi').innerText = activeSesi;
+
+      document.getElementById('realtimeActiveSesi').innerText = activeSesiLabel;
+
+      // Atur tombol kamera menjadi off / disable jika tidak ada sesi aktif
+      const toggleBtn = document.getElementById('btnCameraToggle');
+      if (!currentActiveSesiName) {
+        if (isCameraOn) stopCamera();
+        toggleBtn.disabled = true;
+        toggleBtn.style.opacity = '0.5';
+        toggleBtn.style.cursor = 'not-allowed';
+        toggleBtn.innerText = "Tidak Ada Sesi Aktif";
+      } else {
+        toggleBtn.disabled = false;
+        toggleBtn.style.opacity = '1';
+        toggleBtn.style.cursor = 'pointer';
+        if (!isCameraOn) toggleBtn.innerText = "Buka Kamera";
+      }
     });
   }
 
   function setRole(role) {
     currentRole = role;
-    document.getElementById('btnSiswa').style.background = (role === 'siswa') ? '#1a73e8' : '#6c757d';
-    const btnGuru = document.getElementById('btnGuru');
-    if (btnGuru) btnGuru.style.background = (role === 'guru') ? '#1a73e8' : '#6c757d';
+    const btnSiswa = document.getElementById('btnSiswaAdmin');
+    const btnGuru = document.getElementById('btnGuruAdmin');
+    if (btnSiswa && btnGuru) {
+      btnSiswa.style.background = (role === 'siswa') ? '#1a73e8' : '#6c757d';
+      btnGuru.style.background = (role === 'guru') ? '#1a73e8' : '#6c757d';
+    }
   }
 
   function toggleRekapFilter() {
@@ -432,25 +470,24 @@
     document.getElementById('rekapKelasContainer').style.display = (r === 'siswa') ? 'block' : 'none';
   }
 
-  function toggleCamera() { isCameraOn ? stopCamera() : startCamera(); }
+  function toggleCamera() { 
+    if (!currentActiveSesiName) {
+      alert("Tidak ada sesi absen yang sedang aktif saat ini!");
+      return;
+    }
+    isCameraOn ? stopCamera() : startCamera(); 
+  }
 
   function startCamera() {
-    html5QrcodeScanner = new Html5Qrcode("reader");
-    let activeSesiVal = "Sesi 1";
-    if (userSession === 'guru') {
-      // Ambil sesi aktif secara otomatis berdasarkan waktu sekarang
-      const now = new Date();
-      const currentMin = now.getHours() * 60 + now.getMinutes();
-      // Default fallback
-      activeSesiVal = "Sesi 1"; 
-    } else {
-      activeSesiVal = document.getElementById('sesiSelect').value;
+    if (!currentActiveSesiName) {
+      return alert("Gagal membuka kamera: Sesi absen tidak aktif.");
     }
 
+    html5QrcodeScanner = new Html5Qrcode("reader");
     html5QrcodeScanner.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: { width: 220, height: 220 } },
-      (code) => onScanSuccess(code, activeSesiVal)
+      (code) => onScanSuccess(code, currentActiveSesiName)
     ).then(() => {
       isCameraOn = true;
       const btn = document.getElementById('btnCameraToggle');
@@ -465,8 +502,10 @@
         html5QrcodeScanner.clear();
         isCameraOn = false;
         const btn = document.getElementById('btnCameraToggle');
-        btn.innerText = "Buka Kamera";
-        btn.classList.remove('off');
+        if (currentActiveSesiName) {
+          btn.innerText = "Buka Kamera";
+          btn.classList.remove('off');
+        }
       }).catch(err => console.error(err));
     }
   }
@@ -598,7 +637,6 @@
     sendRequest({ action: 'get_pengaturan' }, res => {
       if (res.status === 'success') {
         globalPengaturanData = res.data;
-        // Tandai checkbox berdasarkan data server
         let activeSesiNames = new Set(globalPengaturanData.map(p => p.sesi));
         document.getElementById('chkSesi1').checked = activeSesiNames.has('Sesi 1');
         document.getElementById('chkSesi2').checked = activeSesiNames.has('Sesi 2');
@@ -623,7 +661,6 @@
       rowsToRender.push(found);
     });
 
-    // Tambahkan baris PIN tetap
     ['PIN_Guru', 'PIN_Admin', 'PIN_Pengaturan'].forEach(pinKey => {
       let found = globalPengaturanData.find(p => p.sesi === pinKey) || { sesi: pinKey, mulai: '1234', batasTW: '', tutup: '', alpa: '' };
       rowsToRender.push(found);
@@ -732,7 +769,6 @@
   }
 
   function saveLibur() {
-    // Sinkronisasi ulang data dari input tabel form sebelum dikirim ke server
     globalLiburList = [];
     const rows = document.querySelectorAll('#tableLiburBody tr');
     rows.forEach((r, idx) => {

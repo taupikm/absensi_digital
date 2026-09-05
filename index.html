@@ -14,7 +14,12 @@
     .topbar { background: #05285e; height: 65px; border-bottom: 1px solid #031c44; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; color: #ffffff; }
     .topbar-left { display: flex; align-items: center; gap: 12px; }
     .topbar-left img { height: 40px; width: 40px; object-fit: contain; }
-    .topbar-center { font-size: 16px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; text-transform: uppercase; }
+    
+    /* TOPBAR CENTER DENGAN WAKTU REALTIME */
+    .topbar-center { text-align: center; }
+    .topbar-title { font-size: 15px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; text-transform: uppercase; }
+    .topbar-clock { font-size: 11px; color: #b2ccf3; font-weight: 600; margin-top: 1px; letter-spacing: 0.5px; }
+
     .topbar-right { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #ffffff; }
     .topbar-right img { height: 38px; width: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #ffffff; }
     .sidebar-toggle-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #ffffff; padding: 5px; }
@@ -42,9 +47,8 @@
     /* FOOTER - DOMINAN BIRU #05285e */
     .footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 45px; background: #05285e; border-top: 1px solid #031c44; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #d0dbe8; z-index: 999; font-weight: 500; }
 
-    /* POPUP NOTIFICATION GLOBAL */
-    #scanPopup { position: fixed; top: 80px; right: 20px; z-index: 3000; width: 320px; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; animation: slideIn 0.3s ease-out; }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    /* POPUP NOTIFICATION GLOBAL TEROPTIMASI SERTA SERTA-MERTA muncul */
+    #scanPopup { position: fixed; top: 75px; right: 20px; z-index: 3000; width: 320px; padding: 12px 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.25); display: none; transform: translateZ(0); will-change: transform, opacity; }
     .popup-success { background: #d4edda; color: #155724; border-left: 5px solid #28a745; }
     .popup-warning { background: #fff3cd; color: #856404; border-left: 5px solid #ffc107; }
     .popup-danger { background: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }
@@ -53,7 +57,12 @@
     .stats-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
     @media(max-width: 900px) { .stats-container { grid-template-columns: 1fr; } }
     .stats-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .stats-card h4 { margin: 0 0 12px 0; color: #05285e; font-size: 14px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+    
+    /* HEADER KARTU STATISTIK DENGAN HARI/TOTAL DIBUAT SEJAJAR */
+    .stats-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px; }
+    .stats-card-header h4 { margin: 0; color: #05285e; font-size: 14px; }
+    .stats-badge-total { background: #05285e; color: #ffffff; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
+
     .stats-grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .stat-box { background: #f0f4f9; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #d0dbe8; }
     .stat-box span { display: block; font-size: 11px; color: #05285e; font-weight: 700; text-transform: uppercase; }
@@ -83,22 +92,25 @@
 </head>
 <body>
 
-<!-- TOPBAR - BIRU #05285e -->
+<!-- TOPBAR - BIRU #05285e DENGAN WAKTU REALTIME -->
 <div class="topbar">
   <div class="topbar-left">
     <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Buka/Tutup Menu">☰</button>
     <img src="https://cdn-icons-png.flaticon.com/512/3135/3135755.png" alt="Logo Sekolah">
   </div>
-  <div class="topbar-center">SMP NEGERI 1 SOBANG</div>
+  <div class="topbar-center">
+    <div class="topbar-title">SMP NEGERI 1 SOBANG</div>
+    <div class="topbar-clock" id="topbarClock">Memuat Waktu...</div>
+  </div>
   <div class="topbar-right">
     <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Foto Admin">
   </div>
 </div>
 
-<!-- POPUP NOTIFICATION SYSTEM -->
+<!-- POPUP NOTIFICATION SYSTEM (CEPAT REALTIME) -->
 <div id="scanPopup">
-  <b id="popupTitle" style="display:block; font-size:14px; margin-bottom:3px;">Notifikasi</b>
-  <span id="popupMessage" style="font-size:12px;">Pesan sistem...</span>
+  <b id="popupTitle" style="display:block; font-size:13px; margin-bottom:2px;">Notifikasi</b>
+  <span id="popupMessage" style="font-size:12px; display:block; line-height:1.3;">Pesan sistem...</span>
 </div>
 
 <!-- OVERLAY BISA DIKLIK DI MANA SAJA UNTUK MENUTUP SIDEBAR -->
@@ -144,10 +156,13 @@
     <div id="menu-dashboard" class="section active">
       <h3 style="margin-top:0; color:#05285e;">Dashboard Real-Time Kehadiran</h3>
       
-      <!-- STATISTIK KOTAK KECIL REALTIME DENGAN WARNA #05285e -->
+      <!-- STATISTIK DENGAN JUMLAH TOTAL GURU & SISWA SEJAJAR -->
       <div class="stats-container">
         <div class="stats-card">
-          <h4>Statistik Guru Hari Ini</h4>
+          <div class="stats-card-header">
+            <h4>Statistik Guru Hari Ini</h4>
+            <div class="stats-badge-total">Total Guru: <span id="totalGuruCount">0</span></div>
+          </div>
           <div class="stats-grid-6">
             <div class="stat-box"><span>Tepat Waktu</span><b id="g-tw">0</b></div>
             <div class="stat-box"><span>Terlambat</span><b id="g-tl">0</b></div>
@@ -158,7 +173,10 @@
           </div>
         </div>
         <div class="stats-card">
-          <h4>Statistik Siswa Hari Ini</h4>
+          <div class="stats-card-header">
+            <h4>Statistik Siswa Hari Ini</h4>
+            <div class="stats-badge-total">Total Siswa: <span id="totalSiswaCount">0</span></div>
+          </div>
           <div class="stats-grid-6">
             <div class="stat-box"><span>Tepat Waktu</span><b id="s-tw">0</b></div>
             <div class="stat-box"><span>Terlambat</span><b id="s-tl">0</b></div>
@@ -344,7 +362,7 @@
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbzeSYXSK4T8cVe172L3oPc5ql0q8ZvYtLErXzsRzmD5wJVgTMYsFDH1RcrJaJfGdr2B/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzZdJvR9SxOd16BDjUuG3VVZeDb9JVxKs96G7W8UoQbFzgBi1iWzdJ0WMyvx_cH4dX7/exec";
 
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
@@ -356,11 +374,35 @@
   let currentActiveSesiName = "";
   let cachedPinConfig = null;
   let dashboardTimer = null;
+  let popupTimeout = null;
 
   document.getElementById('izinTanggal').value = new Date().toISOString().split('T')[0];
 
+  // JALANKAN JAM REALTIME TOPBAR
+  startRealtimeClock();
   preloadPinConfig();
   startRealtimeDashboard();
+
+  // FUNGSI WAKTU / JAM REALTIME TOPBAR
+  function startRealtimeClock() {
+    updateClock();
+    setInterval(updateClock, 1000);
+  }
+
+  function updateClock() {
+    const now = new Date();
+    const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][now.getDay()];
+    const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agus', 'Sep', 'Okt', 'Nov', 'Des'][now.getMonth()];
+    const tgl = String(now.getDate()).padStart(2, '0');
+    const thn = now.getFullYear();
+    const jam = String(now.getHours()).padStart(2, '0');
+    const menit = String(now.getMinutes()).padStart(2, '0');
+    const detik = String(now.getSeconds()).padStart(2, '0');
+
+    const strWaktu = `${hari}, ${tgl} ${bulan} ${thn} | ${jam}:${menit}:${detik} WIB`;
+    const clockEl = document.getElementById('topbarClock');
+    if (clockEl) clockEl.innerText = strWaktu;
+  }
 
   // FUNGSI KONTROL SIDEBAR (DEFAULT TERTUTUP DAN OVERLAY)
   function toggleSidebar() {
@@ -385,6 +427,8 @@
   function fetchDashboardData() {
     sendRequest({ action: 'get_dashboard_data' }, res => {
       if (res.status === 'success') {
+        if (res.totalGuru !== undefined) document.getElementById('totalGuruCount').innerText = res.totalGuru;
+        if (res.totalSiswa !== undefined) document.getElementById('totalSiswaCount').innerText = res.totalSiswa;
         updateStatsUI(res.stats);
         updateDashboardTables(res.guruList, res.siswaList);
       }
@@ -431,13 +475,20 @@
     }
   }
 
+  // OPTIMASI POPUP DIKIRIM LANGSUNG & SERTA-MERTA
   function showScanPopup(type, title, message) {
     const popup = document.getElementById('scanPopup');
+    if (popupTimeout) clearTimeout(popupTimeout);
+    
     popup.className = `popup-${type}`;
     document.getElementById('popupTitle').innerText = title;
     document.getElementById('popupMessage').innerText = message;
+    
     popup.style.display = 'block';
-    setTimeout(() => { popup.style.display = 'none'; }, 3500);
+    
+    popupTimeout = setTimeout(() => { 
+      popup.style.display = 'none'; 
+    }, 2800);
   }
 
   function preloadPinConfig() {
@@ -613,6 +664,7 @@
     }
   }
 
+  // OPTIMASI RESPON CEPAT SCANNER (SERTA-MERTA)
   function onScanSuccess(code, sesiTarget) {
     if (isProcessing) return;
     isProcessing = true;
@@ -622,12 +674,16 @@
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ action: 'absen_qr', role: currentRole, code: code, sesi: sesiTarget })
     })
-    .then(r => r.json())
-    .then(res => {
+    .then(r => r.text())
+    .then(text => {
+      const res = JSON.parse(text);
       let popupType = res.status === 'success' ? 'success' : (res.status === 'warning' ? 'warning' : 'danger');
+      
+      // Tampilkan popup seketika
       showScanPopup(popupType, "Hasil Scan", res.message);
-      isProcessing = false;
-      fetchDashboardData();
+      
+      // Berikan jeda sebentar sebelum memperbolehkan scan berikutnya
+      setTimeout(() => { isProcessing = false; }, 1800);
     })
     .catch(err => {
       showScanPopup("danger", "Gagal", "Koneksi server gagal.");
@@ -757,7 +813,6 @@
     });
   }
 
-  // MANAGEMENT HARI LIBUR FRONTEND
   function loadHariLiburData() {
     sendRequest({ action: 'get_hari_libur' }, res => {
       if (res.status === 'success') {

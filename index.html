@@ -10,97 +10,101 @@
     * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
     body { background-color: #f4f6f9; margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
     
-    /* TOPBAR */
-    .topbar { background: #ffffff; height: 65px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; }
+    /* TOPBAR - DOMINAN BIRU #05285e */
+    .topbar { background: #05285e; height: 65px; border-bottom: 1px solid #031c44; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; color: #ffffff; }
     .topbar-left { display: flex; align-items: center; gap: 12px; }
     .topbar-left img { height: 40px; width: 40px; object-fit: contain; }
-    .topbar-center { font-size: 16px; font-weight: bold; color: #1a73e8; letter-spacing: 0.5px; text-transform: uppercase; }
-    .topbar-right { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #333; }
-    .topbar-right img { height: 38px; width: 38px; border-radius: 50%; object-fit: cover; border: 1px solid #ccc; }
-    .sidebar-toggle-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #1a73e8; padding: 5px; }
+    .topbar-center { font-size: 16px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; text-transform: uppercase; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #ffffff; }
+    .topbar-right img { height: 38px; width: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #ffffff; }
+    .sidebar-toggle-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #ffffff; padding: 5px; }
 
     /* LAYOUT UTAMA */
     .main-wrapper { display: flex; margin-top: 65px; margin-bottom: 45px; flex: 1; position: relative; }
 
-    /* SIDEBAR */
-    .sidebar { width: 260px; background: #ffffff; border-right: 1px solid #e0e0e0; padding: 15px 10px; position: fixed; top: 65px; bottom: 45px; overflow-y: auto; transition: transform 0.3s ease; z-index: 990; }
-    .sidebar.closed { transform: translateX(-100%); }
-    .nav-category { font-size: 11px; font-weight: bold; color: #888; margin: 15px 10px 5px 10px; letter-spacing: 0.5px; }
-    .nav-item { padding: 10px 12px; display: block; color: #333; text-decoration: none; font-size: 13px; font-weight: 600; border-radius: 6px; margin-bottom: 3px; cursor: pointer; transition: background 0.2s; }
-    .nav-item:hover, .nav-item.active { background: #e8f0fe; color: #1a73e8; }
-    .nav-item.locked { opacity: 0.5; color: #888; }
+    /* OVERLAY TUTUP SIDEBAR */
+    .sidebar-overlay { display: none; position: fixed; top: 65px; left: 0; width: 100%; height: calc(100vh - 110px); background: rgba(0,0,0,0.3); z-index: 980; }
+    .sidebar-overlay.active { display: block; }
 
-    /* CONTENT CONTAINER (Fixed layout, tidak ikut bergeser saat sidebar toggle) */
-    .content-container { margin-left: 260px; padding: 20px; flex: 1; width: calc(100% - 260px); background: #f4f6f9; transition: margin-left 0.3s ease, width 0.3s ease; }
-    @media(min-width: 901px) {
-      .content-container { margin-left: 260px !important; width: calc(100% - 260px) !important; }
-    }
-    @media(max-width: 900px) {
-      .content-container { margin-left: 0 !important; width: 100% !important; }
-    }
+    /* SIDEBAR - DOMINAN BIRU #05285e, DEFAULT TERTUTUP */
+    .sidebar { width: 260px; background: #05285e; border-right: 1px solid #031c44; padding: 15px 10px; position: fixed; top: 65px; bottom: 45px; overflow-y: auto; transition: transform 0.3s ease; z-index: 990; transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .nav-category { font-size: 11px; font-weight: bold; color: #9bb3de; margin: 15px 10px 5px 10px; letter-spacing: 0.5px; }
+    .nav-item { padding: 10px 12px; display: block; color: #e2e8f0; text-decoration: none; font-size: 13px; font-weight: 600; border-radius: 6px; margin-bottom: 3px; cursor: pointer; transition: background 0.2s, color 0.2s; }
+    .nav-item:hover, .nav-item.active { background: #0b3c85; color: #ffffff; }
+    .nav-item.locked { opacity: 0.5; color: #8fa0bd; }
+
+    /* CONTENT CONTAINER - FIXED TIDAK BERGESER SAAT SIDEBAR DIBUKA */
+    .content-container { margin-left: 0; padding: 20px; flex: 1; width: 100%; background: #f4f6f9; }
     .section { display: none; }
     .section.active { display: block; }
 
-    /* FOOTER */
-    .footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 45px; background: #ffffff; border-top: 1px solid #e0e0e0; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #666; z-index: 999; font-weight: 500; }
+    /* FOOTER - DOMINAN BIRU #05285e */
+    .footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 45px; background: #05285e; border-top: 1px solid #031c44; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #d0dbe8; z-index: 999; font-weight: 500; }
 
-    /* POPUP SCAN NOTIFICATION */
-    #scanPopup { position: fixed; top: 80px; right: 20px; z-index: 2000; width: 320px; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: none; animation: slideIn 0.3s ease-out; }
+    /* POPUP NOTIFICATION GLOBAL */
+    #scanPopup { position: fixed; top: 80px; right: 20px; z-index: 3000; width: 320px; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; animation: slideIn 0.3s ease-out; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     .popup-success { background: #d4edda; color: #155724; border-left: 5px solid #28a745; }
     .popup-warning { background: #fff3cd; color: #856404; border-left: 5px solid #ffc107; }
     .popup-danger { background: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }
 
-    /* STATS GRID */
+    /* STATS GRID REALTIME */
     .stats-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
     @media(max-width: 900px) { .stats-container { grid-template-columns: 1fr; } }
     .stats-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .stats-card h4 { margin: 0 0 12px 0; color: #1a73e8; font-size: 14px; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px; }
+    .stats-card h4 { margin: 0 0 12px 0; color: #05285e; font-size: 14px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
     .stats-grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .stat-box { background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #eee; }
-    .stat-box span { display: block; font-size: 11px; color: #666; font-weight: 600; }
-    .stat-box b { font-size: 16px; color: #333; }
+    .stat-box { background: #f0f4f9; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #d0dbe8; }
+    .stat-box span { display: block; font-size: 11px; color: #05285e; font-weight: 700; text-transform: uppercase; }
+    .stat-box b { font-size: 16px; color: #05285e; }
 
     .form-group { margin-bottom: 12px; }
     label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 13px; }
     input, select, button { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
-    .btn-primary { background: #1a73e8; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+    .btn-primary { background: #05285e; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+    .btn-primary:hover { background: #0b3c85; }
     .btn-excel { background: #1d6f42; color: white; border: none; font-weight: bold; cursor: pointer; }
     .btn-pdf { background: #d93025; color: white; border: none; font-weight: bold; cursor: pointer; }
-    .btn-toggle { background: #34a853; color: white; border: none; font-weight: bold; cursor: pointer; }
-    .btn-toggle.off { background: #ea4335; }
+    .btn-toggle { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
+    .btn-toggle.off { background: #dc3545; }
+    .btn-danger { background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+    .btn-edit { background: #ffc107; color: #333; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 5px; }
     
     #reader { width: 100%; max-width: 400px; border-radius: 8px; overflow: hidden; margin-top: 10px; background: #111; }
     .table-responsive { overflow-x: auto; margin-top: 10px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
     th, td { padding: 8px; border-bottom: 1px solid #ddd; }
-    th { background-color: #f8f9fa; color: #333; }
+    th { background-color: #f0f4f9; color: #05285e; font-weight: bold; }
 
-    /* MODAL LOGIN PIN (Diperbaiki agar pas & tidak terlalu melebar di HP) */
-    #loginModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 3000; padding: 15px; }
-    .modal-content { background: #fff; padding: 20px; border-radius: 10px; width: 100%; max-width: 320px; text-align: center; box-sizing: border-box; }
+    #loginModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 3000; }
+    .modal-content { background: #fff; padding: 25px; border-radius: 10px; width: 90%; max-width: 350px; text-align: center; }
   </style>
 </head>
 <body>
 
+<!-- TOPBAR - BIRU #05285e -->
 <div class="topbar">
   <div class="topbar-left">
     <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Buka/Tutup Menu">☰</button>
     <img src="https://cdn-icons-png.flaticon.com/512/3135/3135755.png" alt="Logo Sekolah">
-    <span style="font-weight: bold; font-size: 13px; color: #333;" id="userRoleBadge">Tamu / Siswa</span>
   </div>
   <div class="topbar-center">SMP NEGERI 1 SOBANG</div>
   <div class="topbar-right">
-    <span id="adminNameLabel">Admin Absensi</span>
     <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Foto Admin">
   </div>
 </div>
 
+<!-- POPUP NOTIFICATION SYSTEM -->
 <div id="scanPopup">
-  <b id="popupTitle" style="display:block; font-size:14px; margin-bottom:3px;">Notifikasi Scan</b>
-  <span id="popupMessage" style="font-size:12px;">Pesan hasil scan...</span>
+  <b id="popupTitle" style="display:block; font-size:14px; margin-bottom:3px;">Notifikasi</b>
+  <span id="popupMessage" style="font-size:12px;">Pesan sistem...</span>
 </div>
 
+<!-- OVERLAY BISA DIKLIK DI MANA SAJA UNTUK MENUTUP SIDEBAR -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- MODAL LOGIN PIN -->
 <div id="loginModal" style="display:none;">
   <div class="modal-content">
     <h3>Autentikasi PIN</h3>
@@ -113,8 +117,10 @@
   </div>
 </div>
 
+<!-- MAIN LAYOUT -->
 <div class="main-wrapper">
   
+  <!-- SIDEBAR - BIRU #05285e (DEFAULT TERTUTUP) -->
   <div class="sidebar" id="appSidebar">
     <div class="nav-category">DASHBOARD</div>
     <a class="nav-item active" onclick="switchMenu('dashboard', this)">🏠 Dashboard Utama</a>
@@ -127,15 +133,18 @@
     <a class="nav-item locked" id="nav-scanner" onclick="checkMenuAccess('scanner', this)">📷 Scanner Barcode</a>
     <a class="nav-item locked" id="nav-izin" onclick="checkMenuAccess('izin', this)">📝 Input Izin / Sakit</a>
     <a class="nav-item locked" id="nav-rekap" onclick="checkMenuAccess('rekap', this)">📊 Rekap Data</a>
-    <a class="nav-item locked" id="nav-pengaturan" onclick="checkMenuAccess('pengaturan', this)">⚙️ Pengaturan Sesi</a>
-    <a class="nav-item" id="nav-logout" style="display:none; color:#d93025;" onclick="logoutSession()">🚪 Keluar / Logout</a>
+    <a class="nav-item locked" id="nav-pengaturan" onclick="checkMenuAccess('pengaturan', this)">⚙️ Pengaturan Sesi & Libur</a>
+    <a class="nav-item" id="nav-logout" style="display:none; color:#ff8a8a;" onclick="logoutSession()">🚪 Keluar / Logout</a>
   </div>
 
+  <!-- CONTENT CONTAINER - FIXED POSISI (TIDAK BERGESER SAAT SIDEBAR DIBUKA) -->
   <div class="content-container" id="appContent">
 
+    <!-- 1. DASHBOARD UTAMA -->
     <div id="menu-dashboard" class="section active">
-      <h3 style="margin-top:0; color:#1a73e8;">Dashboard Real-Time Kehadiran</h3>
+      <h3 style="margin-top:0; color:#05285e;">Dashboard Real-Time Kehadiran</h3>
       
+      <!-- STATISTIK KOTAK KECIL REALTIME DENGAN WARNA #05285e -->
       <div class="stats-container">
         <div class="stats-card">
           <h4>Statistik Guru Hari Ini</h4>
@@ -161,30 +170,51 @@
         </div>
       </div>
 
-      <div style="background:#e8f0fe; padding:12px; border-radius:8px; margin-bottom:20px; border-left:4px solid #1a73e8;">
-        <span style="font-size:12px; color:#555; font-weight:600;">Sesi Absensi Yang Sedang Berlangsung:</span>
-        <h4 id="realtimeActiveSesi" style="margin:4px 0 0 0; color:#1a73e8; font-size:15px;">Memuat Sesi...</h4>
+      <div style="background:#e0e8f5; padding:12px; border-radius:8px; margin-bottom:20px; border-left:4px solid #05285e;">
+        <span style="font-size:12px; color:#05285e; font-weight:700;">Sesi Absensi Yang Sedang Berlangsung:</span>
+        <h4 id="realtimeActiveSesi" style="margin:4px 0 0 0; color:#05285e; font-size:15px;">Memuat Sesi...</h4>
       </div>
 
-      <h4 style="margin-bottom:5px; color:#333;">Rekap Kehadiran Guru (Real-Time)</h4>
+      <!-- TABEL REKAP KEHADIRAN HARI INI GURU -->
+      <h4 style="margin-bottom:5px; color:#05285e;">Rekap Kehadiran Guru Hari Ini</h4>
       <div class="table-responsive">
         <table>
-          <thead><tr><th>No</th><th>Nama Guru</th><th>Jam Scan</th><th>Sesi Dinamis</th><th>Status</th></tr></thead>
-          <tbody id="tableDashGuru"><tr><td colspan="5" style="text-align:center;">Memuat data...</td></tr></tbody>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Guru</th>
+              <th>Mapel</th>
+              <th>Jam Scan</th>
+              <th>Sesi Scan</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableDashGuru"><tr><td colspan="6" style="text-align:center;">Memuat data...</td></tr></tbody>
         </table>
       </div>
 
-      <h4 style="margin-top:20px; margin-bottom:5px; color:#333;">Rekap Kehadiran Siswa (Real-Time)</h4>
+      <!-- TABEL REKAP KEHADIRAN HARI INI SISWA -->
+      <h4 style="margin-top:20px; margin-bottom:5px; color:#05285e;">Rekap Kehadiran Siswa Hari Ini</h4>
       <div class="table-responsive">
         <table>
-          <thead><tr><th>No</th><th>Nama Siswa</th><th>Jam Scan</th><th>Sesi Dinamis</th><th>Status</th></tr></thead>
-          <tbody id="tableDashSiswa"><tr><td colspan="5" style="text-align:center;">Memuat data...</td></tr></tbody>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Siswa</th>
+              <th>Kelas</th>
+              <th>Jam Scan</th>
+              <th>Sesi Scan</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableDashSiswa"><tr><td colspan="6" style="text-align:center;">Memuat data...</td></tr></tbody>
         </table>
       </div>
     </div>
 
+    <!-- 2. CARI DATA SISWA -->
     <div id="menu-cari" class="section">
-      <h3>Pencarian Data Kehadiran</h3>
+      <h3 style="color:#05285e;">Pencarian Data Kehadiran</h3>
       <div class="form-group" style="display:none;"><select id="cariPeran"><option value="SISWA" selected>Siswa</option></select></div>
       <div class="form-group"><label>Kata Kunci (NISN / Nama Siswa):</label><input type="text" id="cariKeyword" placeholder="Ketik NISN atau Nama Siswa..."></div>
       <div style="display:flex; gap:10px;">
@@ -200,8 +230,9 @@
       </div>
     </div>
 
+    <!-- 3. SCANNER BARCODE -->
     <div id="menu-scanner" class="section">
-      <h3>Scanner QR Barcode</h3>
+      <h3 style="color:#05285e;">Scanner QR Barcode</h3>
       <div id="scannerAdminSwitch" class="form-group" style="display:none;">
         <label>Peran Absen:</label>
         <div style="display:flex; gap:10px;">
@@ -209,18 +240,13 @@
           <button type="button" id="btnGuruAdmin" style="background:#6c757d; color:white; border:none;" onclick="setRole('guru')">Guru</button>
         </div>
       </div>
-      
-      <div style="background:#e8f0fe; padding:10px; border-radius:6px; margin-bottom:10px; border-left:4px solid #1a73e8; max-width:400px;">
-        <span style="font-size:11px; color:#555; font-weight:600;">Sesi Aktif untuk Scanner:</span>
-        <div id="scannerActiveSesiLabel" style="font-weight:bold; color:#1a73e8; font-size:13px;">Memuat sesi...</div>
-      </div>
-
       <button id="btnCameraToggle" class="btn-toggle" onclick="toggleCamera()">Buka Kamera</button>
       <div id="reader"></div>
     </div>
 
+    <!-- 4. INPUT IZIN / SAKIT -->
     <div id="menu-izin" class="section">
-      <h3>Input Izin / Sakit Manual</h3>
+      <h3 style="color:#05285e;">Input Izin / Sakit Manual</h3>
       <div class="form-group" id="izinRoleContainer"><label>Peran:</label><select id="izinRole"><option value="siswa">Siswa</option></select></div>
       <div class="form-group"><label>ID (NISN / NIP):</label><input type="text" id="izinId" placeholder="Masukkan ID"></div>
       <div class="form-group"><label>Tanggal:</label><input type="date" id="izinTanggal"></div>
@@ -229,8 +255,9 @@
       <button class="btn-primary" onclick="simpanIzin()">Simpan Data</button>
     </div>
 
+    <!-- 5. REKAP DATA -->
     <div id="menu-rekap" class="section">
-      <h3>Rekap Kehadiran</h3>
+      <h3 style="color:#05285e;">Rekap Kehadiran</h3>
       <div class="form-group"><label>Tipe Rekap:</label><select id="rekapRole" onchange="toggleRekapFilter()"><option value="siswa">Rekap Siswa</option><option value="guru">Rekap Guru</option></select></div>
       <div class="form-group" id="rekapKelasContainer"><label>Kelas:</label><select id="rekapKelas"><option value="">-- Semua Kelas --</option></select></div>
       <div style="display:flex; gap:10px;">
@@ -243,7 +270,7 @@
         <button class="btn-pdf" onclick="window.print()">🖨️ Cetak / PDF</button>
       </div>
       <div class="table-responsive" style="margin-top:15px;">
-        <p id="labelTotalHari" style="font-weight:bold;"></p>
+        <p id="labelTotalHari" style="font-weight:bold; color:#05285e;"></p>
         <table id="tableRekap">
           <thead><tr><th>ID</th><th>Nama</th><th>Unit/Kelas</th><th>TW</th><th>TL</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>Total Hadir</th><th>% Kehadiran</th></tr></thead>
           <tbody id="tableRekapBody"><tr><td colspan="10" style="text-align:center;">Pilih filter dan klik Tampilkan.</td></tr></tbody>
@@ -251,8 +278,12 @@
       </div>
     </div>
 
+    <!-- 6. PENGATURAN SESI & HARI LIBUR -->
     <div id="menu-pengaturan" class="section">
-      <h3>Pengaturan Sesi & PIN Akses</h3>
+      <h3 style="color:#05285e;">Pengaturan Sesi, PIN & Hari Libur</h3>
+      
+      <!-- TAB PENGATURAN SESI -->
+      <h4 style="color:#05285e; margin-bottom:8px;">Pengaturan Sesi Absensi & PIN</h4>
       <div style="display:flex; gap:15px; margin-bottom:15px; background:#fff; padding:10px; border-radius:6px; border:1px solid #ddd;">
         <label style="font-weight:normal; cursor:pointer;"><input type="checkbox" id="chkSesi1" checked onchange="renderPengaturanTable()"> Sesi 1</label>
         <label style="font-weight:normal; cursor:pointer;"><input type="checkbox" id="chkSesi2" checked onchange="renderPengaturanTable()"> Sesi 2</label>
@@ -264,18 +295,56 @@
           <tbody id="tablePengaturanBody"></tbody>
         </table>
       </div>
-      <button class="btn-primary" style="margin-top:10px;" onclick="savePengaturan()">Simpan Pengaturan</button>
+      <button class="btn-primary" style="margin-top:10px;" onclick="savePengaturan()">Simpan Pengaturan Sesi</button>
+
+      <hr style="margin: 30px 0; border: 0; border-top: 2px dashed #ccc;">
+
+      <!-- MENU INPUT HARI LIBUR & TABEL DAFTAR HARI LIBUR -->
+      <h4 style="color:#05285e; margin-bottom:8px;">Input & Kelola Hari Libur</h4>
+      <div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #ddd;">
+        <input type="hidden" id="editHariLiburRowIndex" value="0">
+        <div style="display:flex; gap:15px; flex-wrap:wrap;">
+          <div class="form-group" style="flex:1; min-width:200px;">
+            <label>Tanggal Libur:</label>
+            <input type="date" id="inputTglLibur">
+          </div>
+          <div class="form-group" style="flex:2; min-width:250px;">
+            <label>Keterangan Libur / Tanggal Merah:</label>
+            <input type="text" id="inputKetLibur" placeholder="Contoh: Libur Hari Raya, Tanggal Merah Nasional...">
+          </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-primary" style="width:auto; padding:8px 20px;" onclick="simpanHariLibur()">Simpan Hari Libur</button>
+          <button id="btnBatalEditLibur" style="display:none; width:auto; padding:8px 20px; background:#6c757d; color:#fff; border:none;" onclick="resetFormHariLibur()">Batal Edit</button>
+        </div>
+      </div>
+
+      <h5 style="color:#05285e; margin-top:20px; margin-bottom:5px;">Daftar Hari Libur Terdaftar</h5>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Tanggal</th>
+              <th>Keterangan</th>
+              <th style="width:120px; text-align:center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tableHariLiburBody"><tr><td colspan="4" style="text-align:center;">Memuat data hari libur...</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
   </div>
 </div>
 
+<!-- FOOTER - BIRU #05285e -->
 <div class="footer">
   &copy; 2026 SMP NEGERI 1 SOBANG &bull; Sistem Absensi Terpadu Berbasis QR Barcode
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyBs1p4TVwymrlfaGXYrqKZ0YxaN07hRq1xs8yfMh77iBp2uqJwkVRrdK54tusfRL6T/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzeSYXSK4T8cVe172L3oPc5ql0q8ZvYtLErXzsRzmD5wJVgTMYsFDH1RcrJaJfGdr2B/exec";
 
   let currentRole = 'siswa';
   let html5QrcodeScanner = null;
@@ -293,9 +362,19 @@
   preloadPinConfig();
   startRealtimeDashboard();
 
+  // FUNGSI KONTROL SIDEBAR (DEFAULT TERTUTUP DAN OVERLAY)
   function toggleSidebar() {
     const sidebar = document.getElementById('appSidebar');
-    sidebar.classList.toggle('closed');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('active');
+  }
+
+  function closeSidebar() {
+    const sidebar = document.getElementById('appSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
   }
 
   function startRealtimeDashboard() {
@@ -307,7 +386,7 @@
     sendRequest({ action: 'get_dashboard_data' }, res => {
       if (res.status === 'success') {
         updateStatsUI(res.stats);
-        updateDashboardTables(res.records);
+        updateDashboardTables(res.guruList, res.siswaList);
       }
     });
   }
@@ -329,26 +408,25 @@
     document.getElementById('s-bolos').innerText = stats.siswa.bolos || 0;
   }
 
-  function updateDashboardTables(records) {
+  function updateDashboardTables(guruList, siswaList) {
     const tbodyGuru = document.getElementById('tableDashGuru');
     const tbodySiswa = document.getElementById('tableDashSiswa');
     tbodyGuru.innerHTML = '';
     tbodySiswa.innerHTML = '';
 
-    let guruRecords = records.filter(r => r.peran === 'GURU');
-    let siswaRecords = records.filter(r => r.peran === 'SISWA');
-
-    if (!guruRecords.length) tbodyGuru.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada data guru hari ini.</td></tr>';
-    else {
-      guruRecords.forEach((r, idx) => {
-        tbodyGuru.innerHTML += `<tr><td>${idx+1}</td><td>${r.nama}</td><td>${r.jamScan}</td><td>${r.sesi}</td><td><b>${r.statusComb}</b></td></tr>`;
+    if (!guruList || !guruList.length) {
+      tbodyGuru.innerHTML = '<tr><td colspan="6" style="text-align:center;">Data guru tidak ditemukan.</td></tr>';
+    } else {
+      guruList.forEach((g, idx) => {
+        tbodyGuru.innerHTML += `<tr><td>${idx+1}</td><td>${g.nama}</td><td>${g.mapel}</td><td>${g.jamScan}</td><td>${g.sesi}</td><td><b>${g.status}</b></td></tr>`;
       });
     }
 
-    if (!siswaRecords.length) tbodySiswa.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada data siswa hari ini.</td></tr>';
-    else {
-      siswaRecords.forEach((r, idx) => {
-        tbodySiswa.innerHTML += `<tr><td>${idx+1}</td><td>${r.nama}</td><td>${r.jamScan}</td><td>${r.sesi}</td><td><b>${r.statusComb}</b></td></tr>`;
+    if (!siswaList || !siswaList.length) {
+      tbodySiswa.innerHTML = '<tr><td colspan="6" style="text-align:center;">Data siswa tidak ditemukan.</td></tr>';
+    } else {
+      siswaList.forEach((s, idx) => {
+        tbodySiswa.innerHTML += `<tr><td>${idx+1}</td><td>${s.nama}</td><td>${s.kelas}</td><td>${s.jamScan}</td><td>${s.sesi}</td><td><b>${s.status}</b></td></tr>`;
       });
     }
   }
@@ -380,7 +458,7 @@
     currentActiveSesiName = "";
 
     list.forEach(p => {
-      if (p.sesi && p.sesi.startsWith('Sesi')) {
+      if (p.sesi && p.sesi.toLowerCase().startsWith('sesi')) {
         const mulai = parseJamToMin(p.mulai);
         const tutup = parseJamToMin(p.tutup);
         if (currentMin >= mulai && currentMin <= tutup) {
@@ -391,9 +469,6 @@
     });
     const sesiEl = document.getElementById('realtimeActiveSesi');
     if (sesiEl) sesiEl.innerText = activeSesiLabel;
-
-    const scannerSesiEl = document.getElementById('scannerActiveSesiLabel');
-    if (scannerSesiEl) scannerSesiEl.innerText = activeSesiLabel;
   }
 
   function parseJamToMin(jamStr) {
@@ -403,14 +478,15 @@
   }
 
   function checkMenuAccess(menuName, el) {
+    closeSidebar();
     if (menuName === 'login') {
       if (userSession !== 'tamu') {
-        alert("Anda sudah dalam status login.");
+        showScanPopup("warning", "Info Status", "Anda sudah dalam status login.");
         return;
       }
       pendingMenu = '';
       document.getElementById('inputPinModal').value = '';
-      document.getElementById('modalInfo').innerText = "Masukkan PIN Guru (4 digit) atau PIN Admin (6 digit).";
+      document.getElementById('modalInfo').innerText = "Masukkan PIN Guru, Admin, atau Pengaturan.";
       document.getElementById('loginModal').style.display = 'flex';
       return;
     }
@@ -430,35 +506,26 @@
 
   function submitLoginPin() {
     const pin = document.getElementById('inputPinModal').value.trim();
-    if (!pin) return alert("PIN tidak boleh kosong!");
+    if (!pin) return showScanPopup("warning", "Peringatan", "PIN tidak boleh kosong!");
 
-    if (cachedPinConfig) {
-      let pinGuru = "1234", pinAdmin = "123456", pinPengaturan = "456789";
-      cachedPinConfig.forEach(p => {
-        if (p.sesi === "PIN_Guru") pinGuru = p.mulai;
-        if (p.sesi === "PIN_Admin") pinAdmin = p.mulai;
-        if (p.sesi === "PIN_Pengaturan") pinPengaturan = p.mulai;
-      });
-
-      if (pin === pinPengaturan || pin === pinAdmin || pin === pinGuru) {
-        userSession = (pin === pinPengaturan) ? "pengaturan" : ((pin === pinAdmin) ? "admin" : "guru");
+    sendRequest({ action: 'login_pin', pin: pin }, res => {
+      if (res.status === 'success') {
+        userSession = res.role;
         closeModal();
         applyRoleAccessUI(userSession);
-        showScanPopup("success", "Login Berhasil", `Masuk sebagai ${userSession.toUpperCase()}`);
+        showScanPopup("success", "Login Berhasil", res.message);
         if (pendingMenu) { switchMenu(pendingMenu.name, pendingMenu.el); pendingMenu = ''; }
-        return;
       } else {
-        return showScanPopup("danger", "Login Gagal", "PIN tidak valid!");
+        showScanPopup("danger", "Login Gagal", res.message);
       }
-    }
+    });
   }
 
   function logoutSession() {
+    closeSidebar();
     if (isCameraOn) stopCamera();
     userSession = 'tamu';
     currentRole = 'siswa';
-    document.getElementById('userRoleBadge').innerText = "Tamu / Siswa";
-    document.getElementById('adminNameLabel').innerText = "Admin Absensi";
     
     document.querySelectorAll('.sidebar .nav-item').forEach(b => {
       if (b.id !== 'nav-scanner' && b.id !== 'nav-izin' && b.id !== 'nav-rekap' && b.id !== 'nav-pengaturan' && b.id !== 'nav-logout') {
@@ -469,12 +536,10 @@
     });
     document.getElementById('nav-logout').style.display = 'none';
     switchMenu('dashboard', document.querySelector('.sidebar .nav-item'));
-    showScanPopup("success", "Logout Berhasil", "Keluar dari sesi akun.");
+    showScanPopup("success", "Logout Berhasil", "Anda telah keluar dari akun.");
   }
 
   function applyRoleAccessUI(role) {
-    document.getElementById('userRoleBadge').innerText = `Status: ${role.toUpperCase()}`;
-    document.getElementById('adminNameLabel').innerText = role.toUpperCase();
     document.getElementById('nav-logout').style.display = 'block';
 
     if (role === 'guru') {
@@ -486,6 +551,7 @@
   }
 
   function switchMenu(menuName, el) {
+    closeSidebar();
     if (isCameraOn) stopCamera();
     document.querySelectorAll('.sidebar .nav-item').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -493,31 +559,31 @@
     if (el) el.classList.add('active');
     document.getElementById(`menu-${menuName}`).classList.add('active');
 
-    // Auto-close sidebar on mobile after clicking menu item
-    if (window.innerWidth <= 900) {
-      document.getElementById('appSidebar').classList.add('closed');
-    }
-
     if (menuName === 'scanner') setupScannerView();
     if (menuName === 'rekap') loadOpsiKelas();
-    if (menuName === 'pengaturan') { loadPengaturanDataFromServer(); }
+    if (menuName === 'pengaturan') {
+      loadPengaturanDataFromServer();
+      loadHariLiburData();
+    }
   }
 
   function setupScannerView() {
     const adminSwitch = document.getElementById('scannerAdminSwitch');
     if (userSession === 'admin' || userSession === 'pengaturan') adminSwitch.style.display = 'block';
     else { adminSwitch.style.display = 'none'; setRole('siswa'); }
-    preloadPinConfig();
   }
 
   function setRole(role) {
     currentRole = role;
-    document.getElementById('btnSiswaAdmin').style.background = (role === 'siswa') ? '#1a73e8' : '#6c757d';
-    document.getElementById('btnGuruAdmin').style.background = (role === 'guru') ? '#1a73e8' : '#6c757d';
+    document.getElementById('btnSiswaAdmin').style.background = (role === 'siswa') ? '#05285e' : '#6c757d';
+    document.getElementById('btnGuruAdmin').style.background = (role === 'guru') ? '#05285e' : '#6c757d';
   }
 
   function toggleCamera() {
-    if (!currentActiveSesiName) return alert("Tidak ada sesi absen aktif saat ini!");
+    if (!currentActiveSesiName) {
+      showScanPopup("warning", "Sesi Tutup", "Tidak ada sesi absen aktif saat ini!");
+      return;
+    }
     isCameraOn ? stopCamera() : startCamera();
   }
 
@@ -531,6 +597,7 @@
       isCameraOn = true;
       const btn = document.getElementById('btnCameraToggle');
       btn.innerText = "Tutup Kamera"; btn.classList.add('off');
+      showScanPopup("success", "Kamera Ready", "Kamera scanner berhasil diaktifkan.");
     }).catch(err => showScanPopup("danger", "Error Kamera", err));
   }
 
@@ -541,6 +608,7 @@
         isCameraOn = false;
         const btn = document.getElementById('btnCameraToggle');
         btn.innerText = "Buka Kamera"; btn.classList.remove('off');
+        showScanPopup("warning", "Kamera Tutup", "Kamera scanner dimatikan.");
       });
     }
   }
@@ -558,7 +626,8 @@
     .then(res => {
       let popupType = res.status === 'success' ? 'success' : (res.status === 'warning' ? 'warning' : 'danger');
       showScanPopup(popupType, "Hasil Scan", res.message);
-      setTimeout(() => { isProcessing = false; fetchDashboardData(); }, 1200);
+      isProcessing = false;
+      fetchDashboardData();
     })
     .catch(err => {
       showScanPopup("danger", "Gagal", "Koneksi server gagal.");
@@ -568,7 +637,7 @@
 
   function simpanIzin() {
     const id = document.getElementById('izinId').value;
-    if (!id) return alert("ID wajib diisi!");
+    if (!id) return showScanPopup("warning", "Peringatan", "ID wajib diisi!");
     sendRequest({
       action: 'input_izin', role: document.getElementById('izinRole').value,
       id: id, tanggal: document.getElementById('izinTanggal').value,
@@ -592,17 +661,10 @@
         thead.innerHTML = '<tr><th>Waktu</th><th>Peran</th><th>ID</th><th>Nama</th><th>Status/Sesi</th></tr>';
         return tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Data tidak ditemukan.</td></tr>';
       }
-      if (res.mode === 'rekap_individu') {
-        thead.innerHTML = '<tr><th>ID</th><th>Nama</th><th>Unit/Kelas</th><th>TW</th><th>TL</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>Total Hadir</th><th>%</th></tr>';
-        res.data.forEach(s => {
-          tbody.innerHTML += `<tr><td>${s.id}</td><td>${s.nama}</td><td>${s.unit}</td><td>${s.tw}</td><td>${s.tl}</td><td>${s.izin}</td><td>${s.sakit}</td><td>${s.alpa}</td><td><b>${s.totalHadir}</b></td><td><b>${s.persentase}%</b></td></tr>`;
-        });
-      } else {
-        thead.innerHTML = '<tr><th>Waktu</th><th>Peran</th><th>ID</th><th>Nama</th><th>Status/Sesi</th></tr>';
-        res.data.forEach(r => {
-          tbody.innerHTML += `<tr><td>${r.timestamp}</td><td>${r.peran}</td><td>${r.id}</td><td>${r.nama}</td><td>${r.sesi}</td></tr>`;
-        });
-      }
+      thead.innerHTML = '<tr><th>Waktu</th><th>Peran</th><th>ID</th><th>Nama</th><th>Status/Sesi</th></tr>';
+      res.data.forEach(r => {
+        tbody.innerHTML += `<tr><td>${r.timestamp}</td><td>${r.peran}</td><td>${r.id}</td><td>${r.nama}</td><td>${r.sesi}</td></tr>`;
+      });
     });
   }
 
@@ -690,9 +752,82 @@
       });
     });
     sendRequest({ action: 'save_pengaturan', config: config }, res => {
-      showScanPopup(res.status === 'success' ? 'success' : 'danger', "Pengaturan", res.message);
+      showScanPopup(res.status === 'success' ? 'success' : 'danger', "Pengaturan Sesi", res.message);
       if (res.status === 'success') loadPengaturanDataFromServer();
     });
+  }
+
+  // MANAGEMENT HARI LIBUR FRONTEND
+  function loadHariLiburData() {
+    sendRequest({ action: 'get_hari_libur' }, res => {
+      if (res.status === 'success') {
+        renderHariLiburTable(res.data);
+      }
+    });
+  }
+
+  function renderHariLiburTable(dataList) {
+    const tbody = document.getElementById('tableHariLiburBody');
+    tbody.innerHTML = '';
+    if (!dataList || !dataList.length) {
+      return tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada hari libur terdaftar.</td></tr>';
+    }
+    dataList.forEach((item, idx) => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><b>${item.tanggal}</b></td>
+          <td>${item.keterangan || '-'}</td>
+          <td style="text-align:center;">
+            <button class="btn-edit" onclick="editHariLibur(${item.rowIndex}, '${item.tanggal}', '${escapeHtml(item.keterangan)}')">Edit</button>
+            <button class="btn-danger" onclick="hapusHariLibur(${item.rowIndex})">Hapus</button>
+          </td>
+        </tr>`;
+    });
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  }
+
+  function simpanHariLibur() {
+    const tgl = document.getElementById('inputTglLibur').value;
+    const ket = document.getElementById('inputKetLibur').value;
+    const rowIndex = document.getElementById('editHariLiburRowIndex').value;
+
+    if (!tgl) return showScanPopup("warning", "Peringatan", "Tanggal libur wajib dipilih!");
+
+    sendRequest({ action: 'save_hari_libur', tanggal: tgl, keterangan: ket, rowIndex: rowIndex }, res => {
+      showScanPopup(res.status === 'success' ? 'success' : 'danger', "Hari Libur", res.message);
+      if (res.status === 'success') {
+        resetFormHariLibur();
+        loadHariLiburData();
+      }
+    });
+  }
+
+  function editHariLibur(rowIndex, tanggal, keterangan) {
+    document.getElementById('editHariLiburRowIndex').value = rowIndex;
+    document.getElementById('inputTglLibur').value = tanggal;
+    document.getElementById('inputKetLibur').value = keterangan;
+    document.getElementById('btnBatalEditLibur').style.display = 'inline-block';
+  }
+
+  function hapusHariLibur(rowIndex) {
+    if (confirm("Apakah Anda yakin ingin menghapus hari libur ini?")) {
+      sendRequest({ action: 'delete_hari_libur', rowIndex: rowIndex }, res => {
+        showScanPopup(res.status === 'success' ? 'success' : 'danger', "Hapus Hari Libur", res.message);
+        if (res.status === 'success') loadHariLiburData();
+      });
+    }
+  }
+
+  function resetFormHariLibur() {
+    document.getElementById('editHariLiburRowIndex').value = '0';
+    document.getElementById('inputTglLibur').value = '';
+    document.getElementById('inputKetLibur').value = '';
+    document.getElementById('btnBatalEditLibur').style.display = 'none';
   }
 
   function toggleRekapFilter() {

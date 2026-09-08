@@ -1,1026 +1,799 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Absensi Online QR Code</title>
-    <!-- html5-qrcode library -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistem Absensi QR Code</title>
+    
+    <!-- Include QR Scanner Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f4f8;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
+            padding: 20px;
         }
-
+        
         .container {
-            max-width: 480px;
-            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
             background: white;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
-            padding: 24px;
-            position: relative;
-            overflow: hidden;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
-
+        
         h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
             font-size: 24px;
-            font-weight: 700;
-            color: #1a202c;
-            text-align: center;
-            margin-bottom: 8px;
         }
-
-        .subtitle {
-            text-align: center;
-            color: #718096;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-
-        /* Login */
-        .login-section {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .role-selector {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        .role-btn {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            background: white;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #4a5568;
-        }
-
-        .role-btn.active {
-            border-color: #4299e1;
-            background: #ebf8ff;
-            color: #2b6cb0;
-        }
-
-        .role-btn:active {
-            transform: scale(0.97);
-        }
-
+        
         .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+            margin-bottom: 15px;
         }
-
-        .form-group label {
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
             font-weight: 600;
             font-size: 14px;
-            color: #2d3748;
         }
-
-        .form-group input {
-            padding: 14px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
             font-size: 16px;
-            transition: border-color 0.2s;
+            transition: all 0.3s;
+        }
+        
+        input:focus, select:focus {
+            border-color: #667eea;
             outline: none;
-            background: #f7fafc;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-
-        .form-group input:focus {
-            border-color: #4299e1;
-            background: white;
-        }
-
+        
         .btn {
+            width: 100%;
             padding: 14px;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 16px;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
-            width: 100%;
+            transition: all 0.3s;
+            margin-top: 10px;
         }
-
+        
         .btn-primary {
-            background: #4299e1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-
+        
         .btn-primary:hover {
-            background: #3182ce;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
         }
-
-        .btn-primary:active {
-            transform: scale(0.97);
-        }
-
+        
         .btn-danger {
-            background: #fc8181;
+            background: #ff6b6b;
             color: white;
         }
-
+        
         .btn-danger:hover {
-            background: #f56565;
+            background: #ee5a24;
         }
-
+        
         .btn-success {
-            background: #48bb78;
+            background: #00b894;
             color: white;
         }
-
+        
         .btn-success:hover {
-            background: #38a169;
+            background: #00a381;
         }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid #e2e8f0;
-            color: #4a5568;
-        }
-
-        .btn-outline:hover {
-            background: #f7fafc;
-        }
-
-        .error-msg {
-            color: #e53e3e;
-            font-size: 14px;
-            text-align: center;
-            min-height: 20px;
-        }
-
-        .success-msg {
-            color: #38a169;
-            font-size: 14px;
-            text-align: center;
-            min-height: 20px;
-        }
-
-        /* Dashboard */
-        .dashboard {
-            display: none;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .user-info {
-            background: #ebf8ff;
-            border-radius: 16px;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .user-info .name {
-            font-weight: 700;
-            font-size: 18px;
-            color: #2b6cb0;
-        }
-
-        .user-info .role-tag {
-            background: #4299e1;
+        
+        .btn-secondary {
+            background: #6c757d;
             color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-sm {
+            padding: 8px 15px;
+            font-size: 14px;
+            width: auto;
+            margin: 5px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+            min-width: 100px;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        #scanCanvas {
+            display: none;
+        }
+        
+        .overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 3px solid #00ff00;
+            width: 250px;
+            height: 250px;
+            border-radius: 20px;
+            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+        
+        .result-box {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .result-box.success {
+            border-left-color: #00b894;
+        }
+        
+        .result-box.error {
+            border-left-color: #ff6b6b;
+        }
+        
+        .result-box h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .status-badge {
+            display: inline-block;
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
         }
-
-        .user-info .logout-btn {
-            background: none;
-            border: none;
-            color: #e53e3e;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .scanner-wrapper {
-            position: relative;
-            border-radius: 16px;
-            overflow: hidden;
-            background: #1a202c;
-            min-height: 280px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #reader {
-            width: 100%;
-            min-height: 280px;
-        }
-
-        #reader video {
-            border-radius: 16px;
-        }
-
-        .scanner-controls {
-            display: flex;
-            gap: 12px;
-            margin-top: 8px;
-        }
-
-        .scanner-controls .btn {
-            flex: 1;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .status-TW {
-            background: #c6f6d5;
-            color: #276749;
-        }
-        .status-TL {
-            background: #fefcbf;
-            color: #975a16;
-        }
-        .status-Alpa {
-            background: #fed7d7;
-            color: #9b2c2c;
-        }
-        .status-Bolos {
-            background: #feb2b2;
-            color: #742a2a;
-        }
-        .status-Belum {
-            background: #e2e8f0;
-            color: #4a5568;
-        }
-
-        .kehadiran-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .kehadiran-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background: #f7fafc;
-            border-radius: 12px;
-            border-left: 4px solid #e2e8f0;
-        }
-
-        .kehadiran-item .sesi-label {
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .kehadiran-item .waktu {
-            font-size: 13px;
-            color: #718096;
-        }
-
-        .rekap-title {
-            font-weight: 700;
-            font-size: 16px;
-            color: #2d3748;
-            margin-top: 8px;
-        }
-
-        .admin-panel {
-            margin-top: 16px;
-            border-top: 2px dashed #e2e8f0;
-            padding-top: 16px;
-            display: none;
-        }
-
-        .admin-panel .sesi-form {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .sesi-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr auto;
-            gap: 8px;
-            align-items: center;
-            background: #f7fafc;
-            padding: 8px 12px;
-            border-radius: 10px;
-        }
-
-        .sesi-row input {
-            padding: 8px 10px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 13px;
-            width: 100%;
-            background: white;
-        }
-
-        .sesi-row .btn-remove {
-            background: #fc8181;
+        
+        .status-badge.tw {
+            background: #00b894;
             color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 6px 10px;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 14px;
         }
-
-        .btn-add-sesi {
-            background: #48bb78;
+        
+        .status-badge.tl {
+            background: #fdcb6e;
+            color: #333;
+        }
+        
+        .status-badge.alpa {
+            background: #ff6b6b;
             color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 10px;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 14px;
         }
-
-        .btn-save-sesi {
-            background: #4299e1;
+        
+        .status-badge.bolos {
+            background: #e17055;
             color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 8px;
         }
-
+        
         .hidden {
             display: none !important;
         }
-
-        .flex-between {
+        
+        .sesi-list {
+            margin: 20px 0;
+        }
+        
+        .sesi-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
-        .mt-8 {
-            margin-top: 8px;
+        
+        .sesi-item .sesi-info {
+            flex: 1;
         }
-
-        .mb-8 {
-            margin-bottom: 8px;
+        
+        .sesi-item .sesi-info strong {
+            display: block;
+            font-size: 16px;
+            color: #333;
         }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .scan-result {
-            padding: 12px;
-            border-radius: 12px;
-            background: #f0fff4;
-            border: 2px solid #48bb78;
-            text-align: center;
-        }
-
-        .scan-result.error {
-            background: #fff5f5;
-            border-color: #fc8181;
-        }
-
-        .toggle-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
+        
+        .sesi-item .sesi-info span {
             font-size: 14px;
-            color: #2d3748;
+            color: #666;
+        }
+        
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .role-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
             cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
         }
-
-        .toggle-label input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #4299e1;
+        
+        .role-btn.active {
+            border-color: #667eea;
+            background: #f0f3ff;
+            color: #667eea;
         }
-
+        
+        .role-btn:hover {
+            border-color: #667eea;
+        }
+        
+        .admin-panel {
+            background: #fff3cd;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideUp 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+        }
+        
+        .toast-success {
+            background: #00b894;
+        }
+        
+        .toast-error {
+            background: #ff6b6b;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .tab:hover {
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
         @media (max-width: 480px) {
             .container {
-                padding: 16px;
+                padding: 15px;
             }
-            .sesi-row {
-                grid-template-columns: 1fr 1fr;
-                gap: 6px;
+            
+            .btn-group .btn {
+                min-width: 80px;
+                font-size: 12px;
+                padding: 10px;
             }
-            .sesi-row .btn-remove {
-                grid-column: span 2;
+            
+            .sesi-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
             }
         }
     </style>
 </head>
 <body>
-
     <div class="container" id="app">
-        <h1>📋 Absensi QR</h1>
-        <p class="subtitle">Scan barcode untuk absen</p>
-
-        <!-- ===== LOGIN SECTION ===== -->
-        <div id="loginSection" class="login-section">
+        <h1>📱 Absensi QR Code</h1>
+        
+        <!-- Login Form -->
+        <div id="loginForm">
             <div class="role-selector">
-                <button class="role-btn active" data-role="siswa">👨‍🎓 Siswa</button>
-                <button class="role-btn" data-role="guru">👨‍🏫 Guru</button>
-                <button class="role-btn" data-role="admin">🛡️ Admin</button>
+                <div class="role-btn active" data-role="siswa" onclick="setRole('siswa')">Siswa</div>
+                <div class="role-btn" data-role="guru" onclick="setRole('guru')">Guru</div>
+                <div class="role-btn" data-role="admin" onclick="setRole('admin')">Admin</div>
             </div>
-
-            <div id="loginForm">
-                <!-- Dinamis diisi oleh JS -->
+            
+            <div class="form-group">
+                <label for="loginId">ID / NISN / NIP</label>
+                <input type="text" id="loginId" placeholder="Masukkan ID/NISN/NIP">
             </div>
-
-            <div id="loginError" class="error-msg"></div>
-            <button id="btnLogin" class="btn btn-primary">Masuk</button>
+            
+            <div class="form-group" id="pinGroup">
+                <label for="loginPin">PIN</label>
+                <input type="password" id="loginPin" placeholder="Masukkan PIN">
+            </div>
+            
+            <button class="btn btn-primary" onclick="login()">Login</button>
         </div>
-
-        <!-- ===== DASHBOARD SECTION ===== -->
-        <div id="dashboardSection" class="dashboard">
-
-            <!-- User Info -->
-            <div class="user-info">
-                <div>
-                    <div class="name" id="displayName">-</div>
-                    <div style="font-size:13px;color:#718096;" id="displayId">-</div>
+        
+        <!-- Main App -->
+        <div id="mainApp" class="hidden">
+            <div id="userInfo" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 10px;">
+                <strong>👤 <span id="userName"></span></strong>
+                <span style="float: right;">
+                    <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+                </span>
+            </div>
+            
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('scan')">Scan QR</div>
+                <div class="tab" onclick="switchTab('sesi')">Sesi</div>
+                <div class="tab" onclick="switchTab('admin')" id="adminTab">Admin</div>
+            </div>
+            
+            <!-- Scan Tab -->
+            <div class="tab-content active" id="tabScan">
+                <div class="form-group">
+                    <label for="scanSesi">Pilih Sesi</label>
+                    <select id="scanSesi">
+                        <option value="">-- Pilih Sesi --</option>
+                    </select>
                 </div>
-                <div>
-                    <span class="role-tag" id="displayRole">-</span>
-                    <button class="logout-btn" id="btnLogout">✕ Keluar</button>
+                
+                <div class="video-container">
+                    <video id="video" playsinline></video>
+                    <div class="overlay" id="scanOverlay"></div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="startScanner()">📷 Buka Kamera</button>
+                    <button class="btn btn-danger" onclick="stopScanner()">✖ Tutup Kamera</button>
+                </div>
+                
+                <div id="scanResult" class="result-box hidden">
+                    <h3 id="resultTitle">Hasil Scan</h3>
+                    <p id="resultMessage"></p>
                 </div>
             </div>
-
-            <!-- Scanner -->
-            <div class="scanner-wrapper" id="scannerWrapper">
-                <div id="reader"></div>
-            </div>
-
-            <div class="scanner-controls">
-                <button id="btnStartCamera" class="btn btn-success">📷 Buka Kamera</button>
-                <button id="btnStopCamera" class="btn btn-danger" disabled>✕ Tutup Kamera</button>
-            </div>
-
-            <!-- Hasil Scan -->
-            <div id="scanResult" class="hidden scan-result"></div>
-
-            <!-- Rekap Kehadiran Hari Ini -->
-            <div>
-                <div class="flex-between">
-                    <span class="rekap-title">📊 Rekap Hari Ini</span>
-                    <button id="btnRefreshStatus" class="btn btn-outline" style="width:auto;padding:6px 16px;font-size:13px;">🔄 Refresh</button>
+            
+            <!-- Sesi Tab -->
+            <div class="tab-content" id="tabSesi">
+                <div id="sesiList" class="sesi-list">
+                    <!-- Sesi akan dimuat di sini -->
                 </div>
-                <div id="kehadiranList" class="kehadiran-list">
-                    <p style="color:#a0aec0;text-align:center;padding:16px;">Belum ada data</p>
+                
+                <div id="addSesiForm" class="admin-panel">
+                    <h4>Tambah Sesi Baru</h4>
+                    <div class="form-group">
+                        <label>Nama Sesi</label>
+                        <input type="text" id="newSesiName" placeholder="Contoh: Sesi 4">
+                    </div>
+                    <div class="form-group">
+                        <label>Jam Mulai</label>
+                        <input type="time" id="newSesiMulai">
+                    </div>
+                    <div class="form-group">
+                        <label>Batas Tepat Waktu</label>
+                        <input type="time" id="newSesiBatas">
+                    </div>
+                    <div class="form-group">
+                        <label>Jam Tutup</label>
+                        <input type="time" id="newSesiTutup">
+                    </div>
+                    <button class="btn btn-primary" onclick="addSesi()">Tambah Sesi</button>
                 </div>
             </div>
-
-            <!-- Admin Panel -->
-            <div id="adminPanel" class="admin-panel">
-                <h3 style="font-size:16px;margin-bottom:8px;">⚙️ Kelola Sesi</h3>
-                <div id="sesiContainer">
-                    <!-- dinamis -->
+            
+            <!-- Admin Tab -->
+            <div class="tab-content" id="tabAdmin">
+                <div id="adminPanel" class="hidden">
+                    <h3>Panel Admin</h3>
+                    <div class="admin-panel">
+                        <h4>Scan Barcode Guru/Siswa</h4>
+                        <p class="text-muted">Gunakan kamera untuk scan barcode</p>
+                    </div>
+                    
+                    <div id="adminResult" class="result-box hidden">
+                        <h3 id="adminResultTitle">Hasil</h3>
+                        <p id="adminResultMessage"></p>
+                    </div>
                 </div>
-                <button id="btnAddSesi" class="btn-add-sesi">+ Tambah Sesi</button>
-                <button id="btnSaveSesi" class="btn-save-sesi">💾 Simpan Pengaturan</button>
-                <div id="adminMsg" class="error-msg mt-8"></div>
+                
+                <div id="adminOnlyMessage" class="admin-panel">
+                    <p>⚠️ Hanya admin yang dapat mengakses panel ini</p>
+                </div>
             </div>
-
         </div>
     </div>
-
+    
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+    
     <script>
-        // ============================================================
-        //  KONFIGURASI
-        // ============================================================
-        // Ganti dengan URL deployment Google Apps Script Anda
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2ybARLF7-x2VPHOQwspT3FfErcqccZ3GTU0DvFPGuJCHLWyjcYWPYD9gaC3_S_UER/exec';
-
-        // ============================================================
-        //  STATE
-        // ============================================================
-        let state = {
-            peran: 'siswa', // 'siswa' | 'guru' | 'admin'
-            user: null, // { id, nama, peran, ... }
-            token: null, // bisa dipakai untuk sesi
-            sesiList: [],
-            kehadiran: [],
-            isScanning: false,
-            html5QrCode: null,
-        };
-
-        // ============================================================
-        //  DOM REFS
-        // ============================================================
-        const $ = (s) => document.querySelector(s);
-        const $$ = (s) => document.querySelectorAll(s);
-
-        const loginSection = $('#loginSection');
-        const dashboardSection = $('#dashboardSection');
-        const loginForm = $('#loginForm');
-        const loginError = $('#loginError');
-        const btnLogin = $('#btnLogin');
-        const roleBtns = $$('.role-btn');
-
-        const displayName = $('#displayName');
-        const displayId = $('#displayId');
-        const displayRole = $('#displayRole');
-        const btnLogout = $('#btnLogout');
-
-        const readerDiv = $('#reader');
-        const btnStartCamera = $('#btnStartCamera');
-        const btnStopCamera = $('#btnStopCamera');
-        const scanResult = $('#scanResult');
-
-        const kehadiranList = $('#kehadiranList');
-        const btnRefreshStatus = $('#btnRefreshStatus');
-
-        const adminPanel = $('#adminPanel');
-        const sesiContainer = $('#sesiContainer');
-        const btnAddSesi = $('#btnAddSesi');
-        const btnSaveSesi = $('#btnSaveSesi');
-        const adminMsg = $('#adminMsg');
-
-        // ============================================================
-        //  LOGIN UI
-        // ============================================================
-        function renderLoginForm() {
-            const peran = state.peran;
-            let html = '';
-            if (peran === 'siswa') {
-                html = `
-                    <div class="form-group">
-                        <label>NISN (8-10 digit)</label>
-                        <input type="text" id="inputNISN" placeholder="Masukkan NISN" maxlength="10" inputmode="numeric" />
-                    </div>
-                `;
-            } else if (peran === 'guru') {
-                html = `
-                    <div class="form-group">
-                        <label>PIN Guru (4 digit)</label>
-                        <input type="password" id="inputPIN" placeholder="Masukkan PIN 4 digit" maxlength="4" inputmode="numeric" />
-                    </div>
-                `;
-            } else if (peran === 'admin') {
-                html = `
-                    <div class="form-group">
-                        <label>PIN Admin (5 digit)</label>
-                        <input type="password" id="inputPIN" placeholder="Masukkan PIN 5 digit" maxlength="5" inputmode="numeric" />
-                    </div>
-                `;
+        // Global Variables
+        let currentRole = 'siswa';
+        let currentUser = null;
+        let videoStream = null;
+        let scanInterval = null;
+        let isScanning = false;
+        let currentSesi = '';
+        
+        // ============================================
+        // Google Apps Script Functions
+        // ============================================
+        function login() {
+            const id = document.getElementById('loginId').value.trim();
+            const pin = document.getElementById('loginPin').value.trim();
+            
+            if (!id) {
+                showToast('Mohon masukkan ID', 'error');
+                return;
             }
-            loginForm.innerHTML = html;
-            loginError.textContent = '';
+            
+            if (currentRole !== 'siswa' && !pin) {
+                showToast('Mohon masukkan PIN', 'error');
+                return;
+            }
+            
+            if (currentRole === 'siswa' && id.length !== 10) {
+                showToast('NISN harus 10 digit', 'error');
+                return;
+            }
+            
+            showToast('Sedang memproses...', 'success');
+            
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    if (response.success) {
+                        currentUser = response;
+                        document.getElementById('userName').textContent = response.nama + ' (' + response.role + ')';
+                        document.getElementById('loginForm').classList.add('hidden');
+                        document.getElementById('mainApp').classList.remove('hidden');
+                        
+                        if (response.role === 'admin') {
+                            document.getElementById('adminTab').classList.remove('hidden');
+                            document.getElementById('adminPanel').classList.remove('hidden');
+                            document.getElementById('adminOnlyMessage').classList.add('hidden');
+                        } else {
+                            document.getElementById('adminTab').classList.add('hidden');
+                        }
+                        
+                        loadSesi();
+                        showToast('Login berhasil! Selamat datang ' + response.nama, 'success');
+                    } else {
+                        showToast('Login gagal: ' + response.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    showToast('Terjadi kesalahan: ' + error.message, 'error');
+                })
+                .doLogin(id, pin, currentRole);
         }
-
-        // Event role buttons
-        roleBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                roleBtns.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                state.peran = this.dataset.role;
-                renderLoginForm();
-            });
-        });
-
-        // ============================================================
-        //  API CALL
-        // ============================================================
-        async function callApi(action, data = {}) {
-            const payload = { action, ...data };
-            try {
-                const resp = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
-                const result = await resp.json();
-                return result;
-            } catch (err) {
-                return { status: 'error', message: 'Gagal terhubung ke server: ' + err.message };
-            }
-        }
-
-        // ============================================================
-        //  LOGIN
-        // ============================================================
-        btnLogin.addEventListener('click', async function() {
-            const peran = state.peran;
-            let payload = { action: '' };
-            let inputVal = '';
-
-            if (peran === 'siswa') {
-                const inp = $('#inputNISN');
-                if (!inp) return;
-                inputVal = inp.value.trim();
-                if (!inputVal) { loginError.textContent = 'Masukkan NISN'; return; }
-                payload = { action: 'loginSiswa', nisn: inputVal };
-            } else if (peran === 'guru') {
-                const inp = $('#inputPIN');
-                if (!inp) return;
-                inputVal = inp.value.trim();
-                if (!inputVal || inputVal.length !== 4) { loginError.textContent = 'PIN harus 4 digit'; return; }
-                payload = { action: 'loginGuru', pin: inputVal };
-            } else if (peran === 'admin') {
-                const inp = $('#inputPIN');
-                if (!inp) return;
-                inputVal = inp.value.trim();
-                if (!inputVal || inputVal.length !== 5) { loginError.textContent = 'PIN Admin harus 5 digit'; return; }
-                payload = { action: 'loginAdmin', pin: inputVal };
-            }
-
-            btnLogin.disabled = true;
-            btnLogin.textContent = 'Memproses...';
-            loginError.textContent = '';
-
-            const result = await callApi(payload.action, payload);
-            btnLogin.disabled = false;
-            btnLogin.textContent = 'Masuk';
-
-            if (result.status === 'success') {
-                state.user = result;
-                // Simpan peran dari hasil login
-                state.peran = result.peran;
-                enterDashboard();
-            } else {
-                loginError.textContent = result.message || 'Login gagal';
-            }
-        });
-
-        // Enter key untuk login
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && loginSection.style.display !== 'none') {
-                btnLogin.click();
-            }
-        });
-
-        // ============================================================
-        //  DASHBOARD
-        // ============================================================
-        function enterDashboard() {
-            loginSection.style.display = 'none';
-            dashboardSection.style.display = 'flex';
-
-            const u = state.user;
-            displayName.textContent = u.nama || '-';
-            displayId.textContent = u.id || '-';
-            const roleMap = { siswa: 'Siswa', guru: 'Guru', admin: 'Admin' };
-            displayRole.textContent = roleMap[u.peran] || u.peran;
-
-            // Admin panel
-            if (u.peran === 'admin') {
-                adminPanel.style.display = 'block';
-                loadSesiPengaturan();
-            } else {
-                adminPanel.style.display = 'none';
-            }
-
-            // Load status
-            loadStatus();
-
-            // Siapkan scanner (tapi belum start)
-            initScanner();
-        }
-
+        
         function logout() {
             stopScanner();
-            state.user = null;
-            state.kehadiran = [];
-            dashboardSection.style.display = 'none';
-            loginSection.style.display = 'flex';
-            scanResult.classList.add('hidden');
-            kehadiranList.innerHTML = '<p style="color:#a0aec0;text-align:center;padding:16px;">Belum ada data</p>';
-            // Reset login form
-            renderLoginForm();
+            currentUser = null;
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+            showToast('Logout berhasil', 'success');
         }
-
-        btnLogout.addEventListener('click', logout);
-
-        // ============================================================
-        //  SCANNER (html5-qrcode)
-        // ============================================================
-        let qrCodeInstance = null;
-        let isScannerReady = false;
-
-        function initScanner() {
-            if (qrCodeInstance) {
-                try { qrCodeInstance.clear(); } catch (e) {}
-                qrCodeInstance = null;
-            }
-            readerDiv.innerHTML = '';
-            // Buat instance
-            qrCodeInstance = new Html5Qrcode("reader");
-            isScannerReady = true;
-            btnStartCamera.disabled = false;
-            btnStopCamera.disabled = true;
-        }
-
-        async function startScanner() {
-            if (!qrCodeInstance) {
-                initScanner();
-                // tunggu sebentar
-                await new Promise(r => setTimeout(r, 300));
-            }
-            if (!qrCodeInstance) return;
-
-            try {
-                const config = {
-                    fps: 15,
-                    qrbox: { width: 280, height: 280 },
-                    aspectRatio: 1.0,
-                };
-                await qrCodeInstance.start({ facingMode: "environment" },
-                    config,
-                    onScanSuccess,
-                    onScanFailure
-                );
-                state.isScanning = true;
-                btnStartCamera.disabled = true;
-                btnStopCamera.disabled = false;
-                scanResult.classList.add('hidden');
-            } catch (err) {
-                alert('Gagal membuka kamera: ' + err.message);
-            }
-        }
-
-        function stopScanner() {
-            if (qrCodeInstance && state.isScanning) {
-                try {
-                    qrCodeInstance.stop();
-                } catch (e) {}
-                state.isScanning = false;
-            }
-            btnStartCamera.disabled = false;
-            btnStopCamera.disabled = true;
-        }
-
-        btnStartCamera.addEventListener('click', startScanner);
-        btnStopCamera.addEventListener('click', stopScanner);
-
-        function onScanSuccess(decodedText, decodedResult) {
-            // decodedText = ID yang di-scan (NISN atau NIP)
-            // Hentikan scan sebentar agar tidak double
-            stopScanner();
-
-            const scanId = decodedText.trim();
-            if (!scanId) {
-                showScanResult('QR Code kosong', true);
-                return;
-            }
-
-            // Proses absen
-            processScan(scanId);
-        }
-
-        function onScanFailure(err) {
-            // ignore
-        }
-
-        // ============================================================
-        //  PROSES SCAN
-        // ============================================================
-        async function processScan(scanId) {
-            const user = state.user;
-            if (!user) return;
-
-            const today = new Date().toISOString().split('T')[0];
-
-            showScanResult('⏳ Memproses absen...', false);
-
-            const result = await callApi('scanAbsen', {
-                userPeran: user.peran,
-                userId: user.id,
-                scanId: scanId,
-                tanggal: today,
+        
+        function setRole(role) {
+            currentRole = role;
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.remove('active');
             });
-
-            if (result.status === 'success') {
-                const d = result.data;
-                const statusMap = {
-                    'TW': '✅ Tepat Waktu',
-                    'TL': '⏰ Terlambat',
-                    'Alpa': '❌ Alpa',
-                    'Bolos': '🚫 Bolos'
-                };
-                const statusText = statusMap[d.status] || d.status;
-                showScanResult(`✅ Absen berhasil!\n${d.nama} - ${d.sesi} : ${statusText}`, false);
-                // Refresh status
-                loadStatus();
+            document.querySelector(`.role-btn[data-role="${role}"]`).classList.add('active');
+            
+            // Show/hide PIN field
+            const pinGroup = document.getElementById('pinGroup');
+            if (role === 'siswa') {
+                pinGroup.classList.add('hidden');
+                document.getElementById('loginPin').required = false;
+                document.getElementById('loginId').placeholder = 'Masukkan NISN (10 digit)';
             } else {
-                showScanResult('❌ ' + (result.message || 'Gagal absen'), true);
-            }
-
-            // Buka kamera lagi setelah 2 detik
-            setTimeout(() => {
-                if (state.user) {
-                    startScanner();
+                pinGroup.classList.remove('hidden');
+                document.getElementById('loginPin').required = true;
+                if (role === 'guru') {
+                    document.getElementById('loginId').placeholder = 'Masukkan NIP (18 digit)';
+                } else {
+                    document.getElementById('loginId').placeholder = 'Masukkan ID Admin';
                 }
-            }, 2000);
-        }
-
-        function showScanResult(msg, isError) {
-            scanResult.classList.remove('hidden', 'error');
-            scanResult.textContent = msg;
-            if (isError) {
-                scanResult.classList.add('error');
-                scanResult.style.borderColor = '#fc8181';
-                scanResult.style.background = '#fff5f5';
-            } else {
-                scanResult.classList.remove('error');
-                scanResult.style.borderColor = '#48bb78';
-                scanResult.style.background = '#f0fff4';
             }
         }
-
-        // ============================================================
-        //  LOAD STATUS KEHADIRAN
-        // ============================================================
-        async function loadStatus() {
-            const user = state.user;
-            if (!user) return;
-
-            const today = new Date().toISOString().split('T')[0];
-
-            const result = await callApi('getStatusPerSesi', {
-                id: user.id,
-                tanggal: today,
-            });
-
-            if (result.status === 'success') {
-                state.kehadiran = result.data || [];
-                renderKehadiran(state.kehadiran);
-            } else {
-                kehadiranList.innerHTML = `<p style="color:#e53e3e;text-align:center;padding:16px;">${result.message || 'Gagal memuat data'}</p>`;
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
+            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+            
+            if (tab === 'scan') {
+                // Load sesi for scan
+                loadSesi();
             }
         }
-
-        function renderKehadiran(data) {
-            if (!data || data.length === 0) {
-                kehadiranList.innerHTML = '<p style="color:#a0aec0;text-align:center;padding:16px;">Belum ada absensi hari ini</p>';
+        
+        function loadSesi() {
+            google.script.run
+                .withSuccessHandler(function(sesiList) {
+                    const select = document.getElementById('scanSesi');
+                    select.innerHTML = '<option value="">-- Pilih Sesi --</option>';
+                    
+                    const sesiContainer = document.getElementById('sesiList');
+                    sesiContainer.innerHTML = '';
+                    
+                    sesiList.forEach(sesi => {
+                        // Add to select
+                        const option = document.createElement('option');
+                        option.value = sesi.sesi;
+                        option.textContent = sesi.sesi + ' (' + sesi.mulai + ' - ' + sesi.tutup + ')';
+                        select.appendChild(option);
+                        
+                        // Add to list
+                        const div = document.createElement('div');
+                        div.className = 'sesi-item';
+                        div.innerHTML = `
+                            <div class="sesi-info">
+                                <strong>${sesi.sesi}</strong>
+                                <span>Mulai: ${sesi.mulai} | Batas TW: ${sesi.batasTw} | Tutup: ${sesi.tutup}</span>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-danger" onclick="deleteSesi('${sesi.sesi}')">Hapus</button>
+                            </div>
+                        `;
+                        sesiContainer.appendChild(div);
+                    });
+                })
+                .withFailureHandler(function(error) {
+                    showToast('Gagal memuat sesi: ' + error.message, 'error');
+                })
+                .getSesiList();
+        }
+        
+        function addSesi() {
+            const nama = document.getElementById('newSesiName').value.trim();
+            const mulai = document.getElementById('newSesiMulai').value;
+            const batas = document.getElementById('newSesiBatas').value;
+            const tutup = document.getElementById('newSesiTutup').value;
+            
+            if (!nama || !mulai || !batas || !tutup) {
+                showToast('Semua field harus diisi', 'error');
                 return;
             }
-
-            let html = '';
-            // data = [{ sesi, status, waktu, scanOleh }]
-            const statusLabel = {
-                'TW': 'Tepat Waktu',
-                'TL': 'Terlambat',
-                'Alpa': 'Alpa',
-                'Bolos': 'Bolos',
-                'Belum': 'Belum absen'
-            };
-            const statusClass = {
-                'TW': 'status-TW',
-                'TL': 'status-TL',
-                'Alpa': 'status-Alpa',
-                'Bolos': 'status-Bolos',
-                'Belum': 'status-Belum'
-            };
-
-            for (const item of data) {
-                const label = statusLabel[item.status] || item.status;
-                const cls = statusClass[item.status] || 'status-Belum';
-                const waktu = item.waktu || '-';
-                html += `
-                    <div class="kehadiran-item">
-                        <div>
-                            <span class="sesi-label">${item.sesi}</span>
-                            <span style="font-size:12px;color:#a0aec0;margin-left:8px;">${waktu}</span>
-                        </div>
-                        <span class="status-badge ${cls}">${label}</span>
-                    </div>
-                `;
-            }
-            kehadiranList.innerHTML = html;
+            
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    if (response.success) {
+                        showToast(response.message, 'success');
+                        loadSesi();
+                        document.getElementById('newSesiName').value = '';
+                        document.getElementById('newSesiMulai').value = '';
+                        document.getElementById('newSesiBatas').value = '';
+                        document.getElementById('newSesiTutup').value = '';
+                    } else {
+                        showToast(response.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    showToast('Gagal menambah sesi: ' + error.message, 'error');
+                })
+                .addSesi(nama, mulai, batas, tutup);
         }
-
-        btnRefreshStatus.addEventListener('click', loadStatus);
-
-        // ============================================================
-        //  ADMIN - KELOLA SESI
-        // ============================================================
-        async function loadSesiPengaturan() {
-            const result = await callApi('getPengaturan');
-            if (result.status === 'success') {
-                state.sesiList = result.data || [];
-                renderSesiForm();
-            } else {
-                adminMsg.textContent = 'Gagal memuat pengaturan: ' + result.message;
-            }
+        
+        function deleteSesi(sesi) {
+            if (!confirm('Yakin ingin menghapus sesi ' + sesi + '?')) return;
+            
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    if (response.success) {
+                        showToast(response.message, 'success');
+                        loadSesi();
+                    } else {
+                        showToast(response.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    showToast('Gagal menghapus sesi: ' + error.message, 'error');
+                })
+                .deleteSesi(sesi);
         }
-
-        function renderSesiForm() {
-            const list = state.sesiList;
-            if (!list || list.length === 0) {
-                sesiContainer.innerHTML = '<p style="color:#a0aec0;text-align:center;padding:12px;">Belum ada sesi. Tambahkan!</p>';
+        
+        // ============================================
+        // QR Scanner Functions
+        // ============================================
+        function startScanner() {
+            const sesi = document.getElementById('scanSesi').value;
+            if (!sesi) {
+                showToast('Pilih sesi terlebih dahulu', 'error');
                 return;
             }
-
-            let html = '';
-            list.forEach((s, idx) => {
-                html += `
-                    <div class="sesi-row" data-index="${idx}">
-                        <input type="text" class="sesi-nama" value="${s.sesi || ''}" placeholder="Nama Sesi" />
-                        <input type="time" class="sesi-mulai" value="${s.mulai || ''}" placeholder="Mulai" />
-                        <input type="time" class="sesi-batas" value="${s.batas || ''}" placeholder="Batas TW" />
-                        <input type="time" class="sesi-tutup" value="${s.tutup || ''}" placeholder="Tutup" />
-                        <button class="btn-remove" data-index="${idx}">✕</button>
-                    </div>
-                `;
-            });
-            sesiContainer.innerHTML = html;
-
-            // Event remove
-            sesiContainer.querySelectorAll('.btn-remove').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const idx = parseInt(this.dataset.index);
-                    state.sesiList.splice(idx, 1);
-                    renderSesiForm();
+            currentSesi = sesi;
+            
+            if (isScanning) {
+                showToast('Scanner sudah berjalan', 'info');
+                return;
+            }
+            
+            const video = document.getElementById('video');
+            
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                })
+                .then(function(stream) {
+                    videoStream = stream;
+                    video.srcObject = stream;
+                    video.play();
+                    isScanning = true;
+                    showToast('Kamera aktif, scan QR Code', 'success');
+                    scanInterval = setInterval(scanQR, 500);
+                })
+                .catch(function(err) {
+                    showToast('Gagal mengakses kamera: ' + err.message, 'error');
                 });
-            });
+            } else {
+                showToast('Browser tidak mendukung kamera', 'error');
+            }
         }
-
-        btnAddSesi.addEventListener('click', function() {
-            const newSesi = { sesi: `Sesi ${state.sesiList.length + 1}`, mulai: '07:00', batas: '08:00', tutup: '09:00' };
-            state.sesiList.push(newSesi);
-            renderSesiForm();
-        });
-
-        btnSaveSesi.addEventListener('click', async function() {
-            // Kumpulkan data dari form
-            const rows = sesiContainer.querySelectorAll('.sesi-row');
-            const newList = [];
-            rows.forEach(row => {
-                const nama = row.querySelector('.sesi-nama').value.trim();
-                const mulai = row.querySelector('.sesi-mulai').value;
-                const batas = row.querySelector('.sesi-batas').value;
-                const tutup = row.querySelector('.sesi-tutup').value;
-                if (nama && mulai && batas && tutup) {
-                    newList.push({ sesi: nama, mulai, batas, tutup });
-                }
-            });
-
-            if (newList.length === 0) {
-                adminMsg.textContent = 'Minimal 1 sesi dengan data lengkap';
+        
+        function stopScanner() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+            isScanning = false;
+            document.getElementById('video').srcObject = null;
+            showToast('Kamera ditutup', 'info');
+        }
+        
+        function scanQR() {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            
+            if (code && code.data) {
+                // Stop scanning
+                stopScanner();
+                
+                // Process QR data
+                processQR(code.data);
+            }
+        }
+        
+        function processQR(qrData) {
+            // QR data format: ROLE|ID
+            // Example: SISWA|1234567890 or GURU|123456789012345678
+            const parts = qrData.split('|');
+            if (parts.length !== 2) {
+                showToast('QR Code tidak valid', 'error');
                 return;
             }
-
-            adminMsg.textContent = 'Menyimpan...';
-            const result = await callApi('updatePengaturan', { pengaturan: newList });
-            if (result.status === 'success') {
-                adminMsg.textContent = '✅ ' + result.message;
-                state.sesiList = newList;
-                renderSesiForm();
-                // Refresh status juga
-                loadStatus();
-            } else {
-                adminMsg.textContent = '❌ ' + result.message;
+            
+            const role = parts[0].toLowerCase();
+            const id = parts[1];
+            
+            if (role !== 'siswa' && role !== 'guru') {
+                showToast('QR Code tidak valid', 'error');
+                return;
             }
-        });
-
-        // ============================================================
-        //  INIT
-        // ============================================================
-        renderLoginForm();
-
-        // Auto-refresh status setiap 30 detik
-        setInterval(() => {
-            if (state.user) {
-                loadStatus();
+            
+            // Validate based on current user role
+            if (currentUser.role === 'guru' && role === 'guru') {
+                showToast('Guru tidak bisa menscan guru lain', 'error');
+                return;
             }
-        }, 30000);
-
-        console.log('Absensi Online QR Code siap!');
-    </script>
-
-</body>
-</html>
+            
+            if (currentUser.role === 'siswa') {
+                showToast('Siswa tidak bisa melakukan absensi', 'error');
+                return;
+            }
+            
+            // Process absensi
+            const tanggal = new Date().toISOString().split('T')[0];
+            
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    if (response.success) {
+                        const resultDiv = document.getElementById('scanResult');

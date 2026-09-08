@@ -9,6 +9,22 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- HTML5-QRCode Scanner Library -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    /* CSS Tambahan agar video scanner mengisi penuh kotak kontainer */
+    #reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      border-radius: 0.75rem;
+    }
+    #reader {
+      border: none !important;
+      width: 100% !important;
+    }
+    #reader__dashboard_section_csr span, #reader__dashboard_section_csr button {
+      font-size: 14px !important;
+    }
+  </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 font-sans flex flex-col justify-between">
 
@@ -109,7 +125,7 @@
         </div>
 
         <!-- Area Pemindai QR -->
-        <div id="reader-container" class="relative hidden rounded-xl overflow-hidden bg-slate-900 border border-slate-300 aspect-video max-w-lg mx-auto flex items-center justify-center">
+        <div id="reader-container" class="relative hidden rounded-xl overflow-hidden bg-slate-900 border border-slate-300 w-full max-w-md mx-auto aspect-square flex items-center justify-center">
           <div id="reader" class="w-full h-full"></div>
         </div>
 
@@ -156,7 +172,7 @@
   <!-- Script Logika Frontend -->
   <script>
     // GANTI URL DI BAWAH INI DENGAN WEB APP URL GOOGLE APPS SCRIPT ANDA
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVmfiCVPfkMtDQ7g2YeFWuxbFZrQRZOmqKpuyCK1ciVIMfs0P1D8eXstHnuA2QAbtmmA/exec"; 
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8sGJcC7vAn3CIyVdpVzEoeBGAgqLqmUKbZlF8gjj0mFgY5p9yoDHyZWvNshWGvL6jqA/exec"; 
 
     let html5QrCode = null;
     let isCameraOpen = false;

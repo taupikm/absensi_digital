@@ -55,7 +55,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwXltvtLmJNisUWp0N0SI_iwHBU6NKlOyV1G9fcXs64O62Mn_ur8rkk01APKJPfdTEH/exec"; // <-- Masukkan URL Web App Google Script Anda di sini
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4rSxec45EZQ0zk2nzZpUrKeV1Eu9wLEh5r1kIcR5hkkdLcuNj1Hqk4h5zdh3wIFoS/exec"; // <-- Masukkan URL Web App Google Script Anda di sini
     let currentUser = null;
     let html5QrCode = null;
     let isCameraOpen = false;
@@ -176,46 +176,46 @@
         isCameraOpen = false;
     }
 
-    async function onScanSuccess(decodedText) {
-        // Hentikan sementara scanner saat memproses data agar tidak spam scan
-        if (html5QrCode && isCameraOpen) {
-            await html5QrCode.pause();
-        }
-
-        let selectedSesi = document.getElementById("select-sesi").value;
-
-        let payload = {
-            action: "scan",
-            scannerRole: currentUser.role,
-            scannerId: currentUser.id,
-            scannedCode: decodedText.trim(),
-            sesi: selectedSesi,
-            tanggal: appConfig.date
-        };
-
-        try {
-            let response = await fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
-            let result = await response.json();
-
-            if (result.status === "success") {
-                showAlert("scan-result", result.message, "success");
-            } else {
-                showAlert("scan-result", result.message, "error"); // Pesan jelas seperti "NISN ... sudah absen sesi ini" atau batasan guru
-            }
-        } catch (err) {
-            showAlert("scan-result", "Gagal mengirim data absen ke server.", "error");
-        }
-
-        // Lanjutkan kamera kembali setelah 2.5 detik
-        setTimeout(async () => {
-            if (html5QrCode && isCameraOpen) {
-                await html5QrCode.resume();
-            }
-        }, 2500);
+async function onScanSuccess(decodedText) {
+    // Hentikan sementara scanner agar tidak terjadi multi-scan berturut-turut
+    if (html5QrCode && isCameraOpen) {
+        await html5QrCode.pause();
     }
+
+    let selectedSesi = document.getElementById("select-sesi").value;
+
+    let payload = {
+        action: "scan",
+        scannerRole: currentUser.role,
+        scannerId: currentUser.id,
+        scannedCode: decodedText.trim(),
+        sesi: selectedSesi,
+        tanggal: appConfig.date
+    };
+
+    try {
+        let response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+        let result = await response.json();
+
+        if (result.status === "success") {
+            showAlert("scan-result", result.message, "success");
+        } else {
+            showAlert("scan-result", result.message, "error");
+        }
+    } catch (err) {
+        showAlert("scan-result", "Gagal mengirim data absen ke server.", "error");
+    }
+
+    // Kamera langsung di-resume kembali setelah 2.5 detik (menepati batas maksimal 3 detik)
+    setTimeout(async () => {
+        if (html5QrCode && isCameraOpen) {
+            await html5QrCode.resume();
+        }
+    }, 2500);
+}
 
     function logout() {
         if (isCameraOpen) stopCamera();

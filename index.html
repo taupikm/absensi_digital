@@ -12,6 +12,7 @@
         <div class="bg-white rounded-lg shadow-md p-6">
             <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">Absensi QR Barcode</h1>
             
+            <!-- Pilih Sesi -->
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">Pilih Sesi Absensi:</label>
                 <select id="selectSesi" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
@@ -19,18 +20,30 @@
                 </select>
             </div>
 
+            <!-- ID / PIN Scanner -->
             <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">ID / NIP Scanner (Guru / Admin):</label>
+                <label class="block text-gray-700 text-sm font-bold mb-2">ID / NIP / PIN Scanner (Guru / Admin):</label>
                 <input type="password" id="inputScanner" placeholder="Masukkan PIN / NIP / Kode Admin" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                <p class="text-xs text-gray-500 mt-1">Guru scan siswa | Admin scan guru & siswa</p>
+                <p class="text-xs text-gray-500 mt-1">Wajib diisi sebelum melakukan scan barcode!</p>
             </div>
 
+            <!-- Kontrol Tombol Buka/Tutup Kamera -->
+            <div class="flex space-x-2 mb-4">
+                <button type="button" onclick="bukaKamera()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-200">
+                    Buka Kamera
+                </button>
+                <button type="button" onclick="tutupKamera()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-200">
+                    Tutup Kamera
+                </button>
+            </div>
+
+            <!-- Kamera Scanner QR -->
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">Kamera Scanner QR:</label>
-                <!-- Tambahkan ID div reader yang spesifik -->
                 <div id="reader" class="w-full rounded overflow-hidden border bg-black" style="min-height: 250px;"></div>
             </div>
 
+            <!-- Status Notifikasi -->
             <div id="notifikasi" class="hidden p-4 rounded text-center font-semibold mb-4"></div>
             
             <div class="text-center text-xs text-gray-400 mt-6">
@@ -40,15 +53,14 @@
     </div>
 
     <script>
-        let html5QrCode;
+        let html5QrCode = null;
         let isProcessing = false;
+        let isCameraRunning = false;
 
         window.onload = function() {
             if (typeof google === 'undefined' || !google.script) {
-                // Berjalan di luar Google Apps Script (misal preview lokal/GitHub biasa tanpa API bridge)
                 document.getElementById('selectSesi').innerHTML = '<option value="Sesi 1">Sesi 1 (Mode Simulasi)</option>';
-                showNotif("Berjalan dalam mode offline/preview. Hubungkan ke Google Apps Script untuk data real.", "warning");
-                initScanner();
+                showNotif("Berjalan dalam mode offline/preview.", "warning");
                 return;
             }
 
@@ -63,9 +75,8 @@
                             opt.textContent = `${sesi.namaSesi} (${sesi.mulaiTW} - ${sesi.tutup})`;
                             select.appendChild(opt);
                         });
-                        initScanner();
                     } else {
-                        select.innerHTML = '<option value="">Pengaturan Sesi Kosong / Sheet Belum Diisi</option>';
+                        select.innerHTML = '<option value="">Pengaturan Sesi Kosong</option>';
                         showNotif("Sheet Pengaturan kosong. Harap isi data sesi di Google Sheets.", "error");
                     }
                 })
@@ -77,9 +88,22 @@
                 .getDatabase();
         };
 
-        function initScanner() {
+        function bukaKamera() {
+            let scannerID = document.getElementById('inputScanner').value.trim();
+            if (!scannerID) {
+                showNotif("Mohon isi ID/PIN Scanner (Guru/Admin) terlebih dahulu sebelum membuka kamera!", "error");
+                return;
+            }
+
+            if (isCameraRunning) {
+                showNotif("Kamera sudah aktif.", "info");
+                return;
+            }
+
             try {
-                html5QrCode = new Html5Qrcode("reader");
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("reader");
+                }
                 const config = { fps: 10, qrbox: { width: 250, height: 250 } };
                 
                 html5QrCode.start(
@@ -87,31 +111,57 @@
                     config, 
                     onScanSuccess,
                     onScanFailure
-                ).catch(err => {
+                ).then(() => {
+                    isCameraRunning = true;
+                    showNotif("Kamera berhasil diaktifkan. Silakan scan barcode.", "info");
+                }).catch(err => {
                     console.error("Gagal membuka kamera:", err);
-                    showNotif("Gagal membuka kamera. Pastikan izin kamera browser diaktifkan (HTTPS/Allow).", "error");
+                    showNotif("Gagal membuka kamera. Pastikan izin kamera browser diaktifkan.", "error");
                 });
             } catch (e) {
                 console.error(e);
+                showNotif("Terjadi kesalahan saat menginisialisasi kamera.", "error");
+            }
+        }
+
+        function tutupKamera() {
+            if (html5QrCode && isCameraRunning) {
+                html5QrCode.stop().then(() => {
+                    isCameraRunning = false;
+                    showNotif("Kamera berhasil ditutup.", "info");
+                }).catch(err => {
+                    console.error("Gagal menghentikan kamera: ", err);
+                });
+            } else {
+                showNotif("Kamera sedang tidak aktif.", "info");
             }
         }
 
         function onScanSuccess(decodedText, decodedResult) {
-            if (isProcessing) return;
-            
+            // Validasi ketat sebelum mengirim data: Pastikan ID Scanner tidak kosong
             let scannerID = document.getElementById('inputScanner').value.trim();
             let selectedSesi = document.getElementById('selectSesi').value;
 
             if (!scannerID) {
-                showNotif("Mohon isi ID/PIN Scanner (Guru/Admin) terlebih dahulu!", "error");
-                return;
+                if (!isProcessing) {
+                    isProcessing = true;
+                    showNotif("GAGAL: Mohon isi ID / PIN Scanner (Guru/Admin) terlebih dahulu!", "error");
+                    setTimeout(() => { isProcessing = false; }, 4000);
+                }
+                return; // Batalkan pengiriman ke sheet jika kosong
             }
 
             if (!selectedSesi) {
-                showNotif("Pilih sesi absensi terlebih dahulu!", "error");
+                if (!isProcessing) {
+                    isProcessing = true;
+                    showNotif("GAGAL: Pilih sesi absensi terlebih dahulu!", "error");
+                    setTimeout(() => { isProcessing = false; }, 4000);
+                }
                 return;
             }
 
+            if (isProcessing) return; // Mencegah spam scan ganda
+            
             isProcessing = true;
             showNotif("Memproses QR Code: " + decodedText + "...", "info");
 
@@ -123,6 +173,7 @@
                 return;
             }
 
+            // Kirim data ke backend Google Apps Script
             google.script.run
                 .withSuccessHandler(function(response) {
                     if (response.status === "success") {
@@ -142,7 +193,7 @@
         }
 
         function onScanFailure(error) {
-            // Abaikan error scan per frame
+            // Abaikan error per frame agar tidak memicu notifikasi berlebih
         }
 
         function showNotif(message, type) {

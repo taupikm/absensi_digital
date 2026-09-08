@@ -1,861 +1,764 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistem Absensi QR Code</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sistem Absensi QR Code</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     
-    <!-- Include QR Scanner Library -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
     
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 24px;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-        
-        input:focus, select:focus {
-            border-color: #667eea;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-danger {
-            background: #ff6b6b;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #ee5a24;
-        }
-        
-        .btn-success {
-            background: #00b894;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #00a381;
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        
-        .btn-sm {
-            padding: 8px 15px;
-            font-size: 14px;
-            width: auto;
-            margin: 5px;
-        }
-        
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .btn-group .btn {
-            flex: 1;
-            min-width: 100px;
-        }
-        
-        .video-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            margin: 20px auto;
-            border-radius: 15px;
-            overflow: hidden;
-            background: #000;
-        }
-        
-        video {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        
-        #scanCanvas {
-            display: none;
-        }
-        
-        .overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border: 3px solid #00ff00;
-            width: 250px;
-            height: 250px;
-            border-radius: 20px;
-            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.3);
-            pointer-events: none;
-        }
-        
-        .result-box {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            border-left: 4px solid #667eea;
-        }
-        
-        .result-box.success {
-            border-left-color: #00b894;
-        }
-        
-        .result-box.error {
-            border-left-color: #ff6b6b;
-        }
-        
-        .result-box h3 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .status-badge.tw {
-            background: #00b894;
-            color: white;
-        }
-        
-        .status-badge.tl {
-            background: #fdcb6e;
-            color: #333;
-        }
-        
-        .status-badge.alpa {
-            background: #ff6b6b;
-            color: white;
-        }
-        
-        .status-badge.bolos {
-            background: #e17055;
-            color: white;
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        .sesi-list {
-            margin: 20px 0;
-        }
-        
-        .sesi-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .sesi-item .sesi-info {
-            flex: 1;
-        }
-        
-        .sesi-item .sesi-info strong {
-            display: block;
-            font-size: 16px;
-            color: #333;
-        }
-        
-        .sesi-item .sesi-info span {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .role-selector {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .role-btn {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            background: white;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        
-        .role-btn.active {
-            border-color: #667eea;
-            background: #f0f3ff;
-            color: #667eea;
-        }
-        
-        .role-btn:hover {
-            border-color: #667eea;
-        }
-        
-        .admin-panel {
-            background: #fff3cd;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 15px 0;
-        }
-        
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 15px 30px;
-            border-radius: 10px;
-            color: white;
-            font-weight: 600;
-            z-index: 1000;
-            animation: slideUp 0.3s ease;
-            max-width: 90%;
-            text-align: center;
-        }
-        
-        .toast-success {
-            background: #00b894;
-        }
-        
-        .toast-error {
-            background: #ff6b6b;
-        }
-        
-        @keyframes slideUp {
-            from {
-                transform: translateX(-50%) translateY(100px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(-50%) translateY(0);
-                opacity: 1;
-            }
-        }
-        
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-        
-        .tab.active {
-            border-bottom-color: #667eea;
-            color: #667eea;
-            font-weight: 600;
-        }
-        
-        .tab:hover {
-            border-bottom-color: #667eea;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        @media (max-width: 480px) {
-            .container {
-                padding: 15px;
-            }
-            
-            .btn-group .btn {
-                min-width: 80px;
-                font-size: 12px;
-                padding: 10px;
-            }
-            
-            .sesi-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-        }
-    </style>
+    .container-custom {
+      max-width: 450px;
+      margin: 0 auto;
+    }
+    
+    .card {
+      border-radius: 20px;
+      border: none;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    
+    .card-header {
+      background: white;
+      border-bottom: 1px solid #f0f0f0;
+      padding: 20px 25px;
+      text-align: center;
+    }
+    
+    .card-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin: 0;
+    }
+    
+    .card-header p {
+      color: #666;
+      font-size: 14px;
+      margin: 5px 0 0;
+    }
+    
+    .card-body {
+      padding: 25px;
+    }
+    
+    .login-section {
+      display: block;
+    }
+    
+    .dashboard-section {
+      display: none;
+    }
+    
+    .form-control {
+      border-radius: 12px;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+    
+    .form-control:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn-primary-custom {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 600;
+      color: white;
+      width: 100%;
+      transition: all 0.3s;
+    }
+    
+    .btn-primary-custom:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      color: white;
+    }
+    
+    .btn-primary-custom:disabled {
+      opacity: 0.6;
+      transform: none;
+    }
+    
+    .btn-outline-danger-custom {
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 600;
+      width: 100%;
+    }
+    
+    .user-info {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .user-info .name {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .user-info .role {
+      font-size: 12px;
+      color: #666;
+      background: #e9ecef;
+      padding: 3px 12px;
+      border-radius: 20px;
+    }
+    
+    .scanner-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+    
+    #video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    #canvas {
+      display: none;
+    }
+    
+    .scanner-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 70%;
+      height: 70%;
+      border: 3px solid #667eea;
+      border-radius: 10px;
+      box-shadow: 0 0 0 4000px rgba(0,0,0,0.4);
+    }
+    
+    .scanner-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .scanner-controls .btn {
+      flex: 1;
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 600;
+    }
+    
+    .session-info {
+      background: #f1f3f5;
+      padding: 12px 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .session-info .session-title {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .session-info .session-status {
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 2px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status-badge.active {
+      background: #51cf66;
+      color: white;
+    }
+    
+    .status-badge.waiting {
+      background: #ffd43b;
+      color: #333;
+    }
+    
+    .status-badge.closed {
+      background: #ff6b6b;
+      color: white;
+    }
+    
+    .result-box {
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 12px;
+      display: none;
+    }
+    
+    .result-box.success {
+      background: #d3f9d8;
+      border: 1px solid #51cf66;
+      display: block;
+    }
+    
+    .result-box.error {
+      background: #ffe3e3;
+      border: 1px solid #ff6b6b;
+      display: block;
+    }
+    
+    .result-box.info {
+      background: #e3f0ff;
+      border: 1px solid #4dabf7;
+      display: block;
+    }
+    
+    .result-box .title {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .result-box .message {
+      font-size: 14px;
+      color: #495057;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 10px;
+    }
+    
+    .loading.active {
+      display: block;
+    }
+    
+    .spinner-border-custom {
+      width: 30px;
+      height: 30px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .logout-btn {
+      background: none;
+      border: none;
+      color: #ff6b6b;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 5px 10px;
+    }
+    
+    .logout-btn:hover {
+      text-decoration: underline;
+    }
+    
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      width: 90%;
+      max-width: 400px;
+    }
+    
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+      
+      .card-body {
+        padding: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container" id="app">
-        <h1>📱 Absensi QR Code</h1>
-        
-        <!-- Login Form -->
-        <div id="loginForm">
-            <div class="role-selector">
-                <div class="role-btn active" data-role="siswa" onclick="setRole('siswa')">Siswa</div>
-                <div class="role-btn" data-role="guru" onclick="setRole('guru')">Guru</div>
-                <div class="role-btn" data-role="admin" onclick="setRole('admin')">Admin</div>
-            </div>
-            
-            <div class="form-group">
-                <label for="loginId">ID / NISN / NIP</label>
-                <input type="text" id="loginId" placeholder="Masukkan ID/NISN/NIP">
-            </div>
-            
-            <div class="form-group" id="pinGroup">
-                <label for="loginPin">PIN</label>
-                <input type="password" id="loginPin" placeholder="Masukkan PIN">
-            </div>
-            
-            <button class="btn btn-primary" onclick="login()">Login</button>
-        </div>
-        
-        <!-- Main App -->
-        <div id="mainApp" class="hidden">
-            <div id="userInfo" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 10px;">
-                <strong>👤 <span id="userName"></span></strong>
-                <span style="float: right;">
-                    <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
-                </span>
-            </div>
-            
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('scan')">Scan QR</div>
-                <div class="tab" onclick="switchTab('sesi')">Sesi</div>
-                <div class="tab" onclick="switchTab('admin')" id="adminTab">Admin</div>
-            </div>
-            
-            <!-- Scan Tab -->
-            <div class="tab-content active" id="tabScan">
-                <div class="form-group">
-                    <label for="scanSesi">Pilih Sesi</label>
-                    <select id="scanSesi">
-                        <option value="">-- Pilih Sesi --</option>
-                    </select>
-                </div>
-                
-                <div class="video-container">
-                    <video id="video" playsinline></video>
-                    <div class="overlay" id="scanOverlay"></div>
-                </div>
-                
-                <div class="btn-group">
-                    <button class="btn btn-success" onclick="startScanner()">📷 Buka Kamera</button>
-                    <button class="btn btn-danger" onclick="stopScanner()">✖ Tutup Kamera</button>
-                </div>
-                
-                <div id="scanResult" class="result-box hidden">
-                    <h3 id="resultTitle">Hasil Scan</h3>
-                    <p id="resultMessage"></p>
-                </div>
-            </div>
-            
-            <!-- Sesi Tab -->
-            <div class="tab-content" id="tabSesi">
-                <div id="sesiList" class="sesi-list">
-                    <!-- Sesi akan dimuat di sini -->
-                </div>
-                
-                <div id="addSesiForm" class="admin-panel">
-                    <h4>Tambah Sesi Baru</h4>
-                    <div class="form-group">
-                        <label>Nama Sesi</label>
-                        <input type="text" id="newSesiName" placeholder="Contoh: Sesi 4">
-                    </div>
-                    <div class="form-group">
-                        <label>Jam Mulai</label>
-                        <input type="time" id="newSesiMulai">
-                    </div>
-                    <div class="form-group">
-                        <label>Batas Tepat Waktu</label>
-                        <input type="time" id="newSesiBatas">
-                    </div>
-                    <div class="form-group">
-                        <label>Jam Tutup</label>
-                        <input type="time" id="newSesiTutup">
-                    </div>
-                    <button class="btn btn-primary" onclick="addSesi()">Tambah Sesi</button>
-                </div>
-            </div>
-            
-            <!-- Admin Tab -->
-            <div class="tab-content" id="tabAdmin">
-                <div id="adminPanel" class="hidden">
-                    <h3>Panel Admin</h3>
-                    <div class="admin-panel">
-                        <h4>Scan Barcode Guru/Siswa</h4>
-                        <p class="text-muted">Gunakan kamera untuk scan barcode</p>
-                    </div>
-                    
-                    <div id="adminResult" class="result-box hidden">
-                        <h3 id="adminResultTitle">Hasil</h3>
-                        <p id="adminResultMessage"></p>
-                    </div>
-                </div>
-                
-                <div id="adminOnlyMessage" class="admin-panel">
-                    <p>⚠️ Hanya admin yang dapat mengakses panel ini</p>
-                </div>
-            </div>
-        </div>
+
+<div class="container-custom">
+  <div class="card">
+    <div class="card-header">
+      <h1>📋 Absensi QR Code</h1>
+      <p>Sistem Absensi Online dengan QR Code</p>
     </div>
     
-    <!-- Toast Container -->
-    <div id="toastContainer"></div>
+    <div class="card-body">
+      
+      <!-- ===== LOGIN SECTION ===== -->
+      <div id="loginSection" class="login-section">
+        <div class="mb-3">
+          <label class="form-label fw-bold">NISN / PIN</label>
+          <input type="password" id="credential" class="form-control" 
+                 placeholder="Masukkan NISN (8 digit) atau PIN (4/5 digit)" 
+                 maxlength="18" autocomplete="off">
+        </div>
+        
+        <button class="btn-primary-custom" onclick="handleLogin()">
+          <i class="fas fa-sign-in-alt me-2"></i>Login
+        </button>
+        
+        <div id="loginResult" class="result-box mt-3"></div>
+      </div>
+      
+      <!-- ===== DASHBOARD SECTION ===== -->
+      <div id="dashboardSection" class="dashboard-section">
+        
+        <!-- User Info -->
+        <div class="user-info">
+          <div>
+            <div class="name" id="userName">-</div>
+            <span class="role" id="userRole">-</span>
+          </div>
+          <button class="logout-btn" onclick="handleLogout()">
+            <i class="fas fa-sign-out-alt me-1"></i>Logout
+          </button>
+        </div>
+        
+        <!-- Session Info -->
+        <div class="session-info" id="sessionInfo">
+          <div class="session-title" id="sessionTitle">
+            <i class="fas fa-clock me-2"></i>Memuat sesi...
+          </div>
+          <div class="session-status" id="sessionStatus">-</div>
+        </div>
+        
+        <!-- Scanner -->
+        <div class="scanner-container">
+          <video id="video" playsinline></video>
+          <div class="scanner-overlay"></div>
+          <canvas id="canvas"></canvas>
+        </div>
+        
+        <div class="scanner-controls">
+          <button class="btn btn-success" id="startCameraBtn" onclick="handleStartCamera()">
+            <i class="fas fa-camera me-1"></i>Buka Kamera
+          </button>
+          <button class="btn btn-danger" id="stopCameraBtn" onclick="handleStopCamera()" disabled>
+            <i class="fas fa-camera-slash me-1"></i>Tutup
+          </button>
+        </div>
+        
+        <div class="loading" id="scanLoading">
+          <div class="spinner-border-custom"></div>
+          <p class="mt-2 text-muted" style="font-size:14px;">Memproses scan...</p>
+        </div>
+        
+        <div id="scanResult" class="result-box"></div>
+        
+        <!-- Info -->
+        <p class="text-center text-muted mt-3" style="font-size:12px;">
+          <i class="fas fa-info-circle me-1"></i>
+          Arahkan kamera ke QR Code siswa/guru
+        </p>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- JS Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// ============================================
+// KONFIGURASI
+// ============================================
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxu_4kxf9mi3PvNuyqBSThDCuffQDbCN5XhmfRdGI76CN9UwmwejXHyi1ISeVHyEC5mRA/exec';
+// GANTI URL DI ATAS DENGAN URL WEB APP ANDA!
+
+// ============================================
+// VARIABEL GLOBAL
+// ============================================
+let currentUser = null;
+let videoStream = null;
+let isScanning = false;
+let scanFrameId = null;
+
+// ============================================
+// FUNGSI BACKEND CALL
+// ============================================
+async function callBackend(action, params = []) {
+  try {
+    const response = await fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: action,
+        params: params
+      })
+    });
     
-    <script>
-        // Global Variables
-        let currentRole = 'siswa';
-        let currentUser = null;
-        let videoStream = null;
-        let scanInterval = null;
-        let isScanning = false;
-        let currentSesi = '';
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Backend Error:', error);
+    return {
+      status: 'error',
+      message: 'Gagal terhubung ke server: ' + error.message
+    };
+  }
+}
+
+// ============================================
+// FUNGSI LOGIN
+// ============================================
+async function handleLogin() {
+  const credential = document.getElementById('credential').value.trim();
+  const resultBox = document.getElementById('loginResult');
+  
+  if (!credential) {
+    showResult('loginResult', 'error', 'Error', 'Silakan masukkan NISN atau PIN');
+    return;
+  }
+  
+  showResult('loginResult', 'info', '⏳ Memproses...', 'Sedang memverifikasi kredensial...');
+  
+  const response = await callBackend('login', [credential]);
+  
+  if (response.status === 'success') {
+    currentUser = response.data;
+    currentUser.role = response.role;
+    
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('dashboardSection').style.display = 'block';
+    
+    document.getElementById('userName').textContent = currentUser.nama || currentUser.name;
+    document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
+    
+    // Load sessions
+    await loadSessions();
+    
+    // Auto start camera
+    setTimeout(handleStartCamera, 500);
+    
+  } else {
+    showResult('loginResult', 'error', '❌ Login Gagal', response.message);
+  }
+}
+
+// ============================================
+// FUNGSI LOAD SESSIONS
+// ============================================
+async function loadSessions() {
+  const response = await callBackend('getSessions');
+  
+  const title = document.getElementById('sessionTitle');
+  const status = document.getElementById('sessionStatus');
+  
+  if (response.status !== 'success' || response.length === 0) {
+    title.textContent = 'Tidak ada sesi aktif';
+    status.textContent = 'Tidak ada sesi yang tersedia';
+    return;
+  }
+  
+  const now = new Date();
+  const activeSessions = response.filter(s => {
+    const mulai = new Date(s.mulai);
+    const tutup = new Date(s.tutup);
+    return now >= mulai && now <= tutup;
+  });
+  
+  if (activeSessions.length === 0) {
+    title.textContent = 'Tidak ada sesi aktif';
+    status.textContent = 'Semua sesi belum dimulai atau sudah tutup';
+    return;
+  }
+  
+  const session = activeSessions[0];
+  title.textContent = `Sesi: ${session.nama}`;
+  
+  let statusText = '';
+  let statusClass = '';
+  if (session.status === 'tepat_waktu') {
+    statusText = '🟢 Tepat Waktu (Buka)';
+    statusClass = 'active';
+  } else if (session.status === 'terlambat') {
+    statusText = '🟡 Terlambat (Buka)';
+    statusClass = 'waiting';
+  } else {
+    statusText = '🔴 Tutup';
+    statusClass = 'closed';
+  }
+  
+  status.innerHTML = `<span class="status-badge ${statusClass}">${statusText}</span>`;
+}
+
+// ============================================
+// FUNGSI KAMERA
+// ============================================
+async function handleStartCamera() {
+  const video = document.getElementById('video');
+  const startBtn = document.getElementById('startCameraBtn');
+  const stopBtn = document.getElementById('stopCameraBtn');
+  
+  if (videoStream) {
+    handleStopCamera();
+  }
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: 'environment',
+        width: { ideal: 640 },
+        height: { ideal: 480 }
+      }
+    });
+    
+    videoStream = stream;
+    video.srcObject = stream;
+    video.setAttribute('playsinline', true);
+    await video.play();
+    
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    
+    // Start scanning
+    startScanning();
+    
+  } catch (error) {
+    console.error('Camera error:', error);
+    showResult('scanResult', 'error', '❌ Error Kamera', 
+      'Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  }
+}
+
+function handleStopCamera() {
+  if (videoStream) {
+    videoStream.getTracks().forEach(track => track.stop());
+    videoStream = null;
+    document.getElementById('video').srcObject = null;
+    isScanning = false;
+    
+    if (scanFrameId) {
+      cancelAnimationFrame(scanFrameId);
+      scanFrameId = null;
+    }
+    
+    document.getElementById('startCameraBtn').disabled = false;
+    document.getElementById('stopCameraBtn').disabled = true;
+  }
+}
+
+// ============================================
+// FUNGSI SCAN QR
+// ============================================
+function startScanning() {
+  if (!currentUser) return;
+  
+  isScanning = true;
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const context = canvas.getContext('2d');
+  
+  function scanFrame() {
+    if (!isScanning || !videoStream) {
+      return;
+    }
+    
+    try {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // ============================================
-        // Google Apps Script Functions
-        // ============================================
-        function login() {
-            const id = document.getElementById('loginId').value.trim();
-            const pin = document.getElementById('loginPin').value.trim();
-            
-            if (!id) {
-                showToast('Mohon masukkan ID', 'error');
-                return;
-            }
-            
-            if (currentRole !== 'siswa' && !pin) {
-                showToast('Mohon masukkan PIN', 'error');
-                return;
-            }
-            
-            if (currentRole === 'siswa' && id.length !== 10) {
-                showToast('NISN harus 10 digit', 'error');
-                return;
-            }
-            
-            showToast('Sedang memproses...', 'success');
-            
-            google.script.run
-                .withSuccessHandler(function(response) {
-                    if (response.success) {
-                        currentUser = response;
-                        document.getElementById('userName').textContent = response.nama + ' (' + response.role + ')';
-                        document.getElementById('loginForm').classList.add('hidden');
-                        document.getElementById('mainApp').classList.remove('hidden');
-                        
-                        if (response.role === 'admin') {
-                            document.getElementById('adminTab').classList.remove('hidden');
-                            document.getElementById('adminPanel').classList.remove('hidden');
-                            document.getElementById('adminOnlyMessage').classList.add('hidden');
-                        } else {
-                            document.getElementById('adminTab').classList.add('hidden');
-                        }
-                        
-                        loadSesi();
-                        showToast('Login berhasil! Selamat datang ' + response.nama, 'success');
-                    } else {
-                        showToast('Login gagal: ' + response.message, 'error');
-                    }
-                })
-                .withFailureHandler(function(error) {
-                    showToast('Terjadi kesalahan: ' + error.message, 'error');
-                })
-                .doLogin(id, pin, currentRole);
-        }
-        
-        function logout() {
-            stopScanner();
-            currentUser = null;
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('mainApp').classList.add('hidden');
-            showToast('Logout berhasil', 'success');
-        }
-        
-        function setRole(role) {
-            currentRole = role;
-            document.querySelectorAll('.role-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector(`.role-btn[data-role="${role}"]`).classList.add('active');
-            
-            // Show/hide PIN field
-            const pinGroup = document.getElementById('pinGroup');
-            if (role === 'siswa') {
-                pinGroup.classList.add('hidden');
-                document.getElementById('loginPin').required = false;
-                document.getElementById('loginId').placeholder = 'Masukkan NISN (10 digit)';
-            } else {
-                pinGroup.classList.remove('hidden');
-                document.getElementById('loginPin').required = true;
-                if (role === 'guru') {
-                    document.getElementById('loginId').placeholder = 'Masukkan NIP (18 digit)';
-                } else {
-                    document.getElementById('loginId').placeholder = 'Masukkan ID Admin';
-                }
-            }
-        }
-        
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
-            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-            
-            if (tab === 'scan') {
-                // Load sesi for scan
-                loadSesi();
-            }
-        }
-        
-        function loadSesi() {
-            google.script.run
-                .withSuccessHandler(function(sesiList) {
-                    const select = document.getElementById('scanSesi');
-                    select.innerHTML = '<option value="">-- Pilih Sesi --</option>';
-                    
-                    const sesiContainer = document.getElementById('sesiList');
-                    sesiContainer.innerHTML = '';
-                    
-                    sesiList.forEach(sesi => {
-                        // Add to select
-                        const option = document.createElement('option');
-                        option.value = sesi.sesi;
-                        option.textContent = sesi.sesi + ' (' + sesi.mulai + ' - ' + sesi.tutup + ')';
-                        select.appendChild(option);
-                        
-                        // Add to list
-                        const div = document.createElement('div');
-                        div.className = 'sesi-item';
-                        div.innerHTML = `
-                            <div class="sesi-info">
-                                <strong>${sesi.sesi}</strong>
-                                <span>Mulai: ${sesi.mulai} | Batas TW: ${sesi.batasTw} | Tutup: ${sesi.tutup}</span>
-                            </div>
-                            <div>
-                                <button class="btn btn-sm btn-danger" onclick="deleteSesi('${sesi.sesi}')">Hapus</button>
-                            </div>
-                        `;
-                        sesiContainer.appendChild(div);
-                    });
-                })
-                .withFailureHandler(function(error) {
-                    showToast('Gagal memuat sesi: ' + error.message, 'error');
-                })
-                .getSesiList();
-        }
-        
-        function addSesi() {
-            const nama = document.getElementById('newSesiName').value.trim();
-            const mulai = document.getElementById('newSesiMulai').value;
-            const batas = document.getElementById('newSesiBatas').value;
-            const tutup = document.getElementById('newSesiTutup').value;
-            
-            if (!nama || !mulai || !batas || !tutup) {
-                showToast('Semua field harus diisi', 'error');
-                return;
-            }
-            
-            google.script.run
-                .withSuccessHandler(function(response) {
-                    if (response.success) {
-                        showToast(response.message, 'success');
-                        loadSesi();
-                        document.getElementById('newSesiName').value = '';
-                        document.getElementById('newSesiMulai').value = '';
-                        document.getElementById('newSesiBatas').value = '';
-                        document.getElementById('newSesiTutup').value = '';
-                    } else {
-                        showToast(response.message, 'error');
-                    }
-                })
-                .withFailureHandler(function(error) {
-                    showToast('Gagal menambah sesi: ' + error.message, 'error');
-                })
-                .addSesi(nama, mulai, batas, tutup);
-        }
-        
-        function deleteSesi(sesi) {
-            if (!confirm('Yakin ingin menghapus sesi ' + sesi + '?')) return;
-            
-            google.script.run
-                .withSuccessHandler(function(response) {
-                    if (response.success) {
-                        showToast(response.message, 'success');
-                        loadSesi();
-                    } else {
-                        showToast(response.message, 'error');
-                    }
-                })
-                .withFailureHandler(function(error) {
-                    showToast('Gagal menghapus sesi: ' + error.message, 'error');
-                })
-                .deleteSesi(sesi);
-        }
-        
-        // ============================================
-        // QR Scanner Functions
-        // ============================================
-        function startScanner() {
-            const sesi = document.getElementById('scanSesi').value;
-            if (!sesi) {
-                showToast('Pilih sesi terlebih dahulu', 'error');
-                return;
-            }
-            currentSesi = sesi;
-            
-            if (isScanning) {
-                showToast('Scanner sudah berjalan', 'info');
-                return;
-            }
-            
-            const video = document.getElementById('video');
-            
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
-                })
-                .then(function(stream) {
-                    videoStream = stream;
-                    video.srcObject = stream;
-                    video.play();
-                    isScanning = true;
-                    showToast('Kamera aktif, scan QR Code', 'success');
-                    scanInterval = setInterval(scanQR, 500);
-                })
-                .catch(function(err) {
-                    showToast('Gagal mengakses kamera: ' + err.message, 'error');
-                });
-            } else {
-                showToast('Browser tidak mendukung kamera', 'error');
-            }
-        }
-        
-        function stopScanner() {
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
-            }
-            if (scanInterval) {
-                clearInterval(scanInterval);
-                scanInterval = null;
-            }
-            isScanning = false;
-            document.getElementById('video').srcObject = null;
-            showToast('Kamera ditutup', 'info');
-        }
-        
-        function scanQR() {
-            const video = document.getElementById('video');
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-            
-            if (code && code.data) {
-                // Stop scanning
-                stopScanner();
-                
-                // Process QR data
-                processQR(code.data);
-            }
-        }
-        
-        function processQR(qrData) {
-            // QR data format: ROLE|ID
-            // Example: SISWA|1234567890 or GURU|123456789012345678
-            const parts = qrData.split('|');
-            if (parts.length !== 2) {
-                showToast('QR Code tidak valid', 'error');
-                return;
-            }
-            
-            const role = parts[0].toLowerCase();
-            const id = parts[1];
-            
-            if (role !== 'siswa' && role !== 'guru') {
-                showToast('QR Code tidak valid', 'error');
-                return;
-            }
-            
-            // Validate based on current user role
-            if (currentUser.role === 'guru' && role === 'guru') {
-                showToast('Guru tidak bisa menscan guru lain', 'error');
-                return;
-            }
-            
-            if (currentUser.role === 'siswa') {
-                showToast('Siswa tidak bisa melakukan absensi', 'error');
-                return;
-            }
-            
-            // Process absensi
-            const tanggal = new Date().toISOString().split('T')[0];
-            
-            google.script.run
-                .withSuccessHandler(function(response) {
-                    if (response.success) {
-                        const resultDiv = document.getElementById('scanResult');
-                        resultDiv.className = 'result-box success';
-                        resultDiv.classList.remove('hidden');
-                        document.getElementById('resultTitle').textContent = '✅ Absensi Berhasil!';
-                        document.getElementById('resultMessage').innerHTML = `
-                            <strong>Nama:</strong> ${response.nama}<br>
-                            <strong>Status:</strong> <span class="status-badge tw">${response.status}</span><br>
-                            <strong>Sesi:</strong> ${currentSesi}
-                        `;
-                        showToast('Absensi berhasil! Status: ' + response.status, 'success');
-                    } else {
-                        const resultDiv = document.getElementById('scanResult');
-                        resultDiv.className = 'result-box error';
-                        resultDiv.classList.remove('hidden');
-                        document.getElementById('resultTitle').textContent = '❌ Gagal';
-                        document.getElementById('resultMessage').textContent = response.message;
-                        showToast('Gagal: ' + response.message, 'error');
-                    }
-                })
-                .withFailureHandler(function(error) {
-                    showToast('Terjadi kesalahan: ' + error.message, 'error');
-                })
-                .doAbsensi(
-                    currentUser.id || 'admin',
-                    currentUser.role,
-                    id,
-                    role,
-                    currentSesi,
-                    tanggal
-                );
-        }
-        
-        // ============================================
-        // Utility Functions
-        // ============================================
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = 'toast toast-' + type;
-            toast.textContent = message;
-            container.appendChild(toast);
-            
-            setTimeout(function() {
-                toast.remove();
-            }, 5000);
-        }
-        
-        // ============================================
-        // Initialize
-        // ============================================
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set default role
-            setRole('siswa');
-            
-            // Load initial data
-            loadSesi();
-            
-            // Auto login for demo (remove in production)
-            // document.getElementById('loginId').value = '1234567890';
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert',
         });
-    </script>
+        
+        if (code && code.data) {
+          // Stop scanning temporarily
+          isScanning = false;
+          document.getElementById('scanLoading').classList.add('active');
+          
+          // Process QR code
+          processQRCode(code.data);
+          
+          // Resume scanning after delay
+          setTimeout(() => {
+            if (videoStream) {
+              isScanning = true;
+              document.getElementById('scanLoading').classList.remove('active');
+              scanFrameId = requestAnimationFrame(scanFrame);
+            }
+          }, 3000);
+          
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Scan error:', e);
+    }
+    
+    if (isScanning && videoStream) {
+      scanFrameId = requestAnimationFrame(scanFrame);
+    }
+  }
+  
+  scanFrame();
+}
+
+// ============================================
+// FUNGSI PROSES QR
+// ============================================
+async function processQRCode(qrData) {
+  const loading = document.getElementById('scanLoading');
+  loading.classList.add('active');
+  
+  const response = await callBackend('scanQR', [qrData, currentUser]);
+  
+  loading.classList.remove('active');
+  
+  if (response.status === 'success') {
+    showResult('scanResult', 'success', '✅ Absensi Berhasil', 
+      `Nama: ${response.data.nama}\nStatus: ${response.data.status}\nSesi: ${response.data.session}`);
+    
+    // Reload session info
+    await loadSessions();
+    
+    // Show toast
+    showToast('success', `✅ ${response.data.nama} - ${response.data.status}`);
+    
+  } else {
+    showResult('scanResult', 'error', '❌ Gagal', response.message);
+    showToast('error', response.message);
+  }
+}
+
+// ============================================
+// FUNGSI UI HELPERS
+// ============================================
+function showResult(elementId, type, title, message) {
+  const element = document.getElementById(elementId);
+  element.className = `result-box ${type}`;
+  element.style.display = 'block';
+  element.innerHTML = `
+    <div class="title">${title}</div>
+    <div class="message" style="white-space:pre-line;">${message}</div>
+  `;
+  
+  if (type === 'success') {
+    setTimeout(() => {
+      element.style.display = 'none';
+    }, 5000);
+  }
+}
+
+function showToast(type, message) {
+  const container = document.getElementById('toastContainer');
+  const bgColor = type === 'success' ? '#51cf66' : '#ff6b6b';
+  
+  const toast = document.createElement('div');
+  toast.className = 'toast show';
+  toast.style.cssText = `
+    background: ${bgColor};
+    color: white;
+    border-radius: 12px;
+    padding: 12px 20px;
+    margin-bottom: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s ease;
+  `;
+  toast.textContent = message;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+function handleLogout() {
+  handleStopCamera();
+  currentUser = null;
+  
+  document.getElementById('loginSection').style.display = 'block';
+  document.getElementById('dashboardSection').style.display = 'none';
+  document.getElementById('credential').value = '';
+  document.getElementById('loginResult').style.display = 'none';
+  document.getElementById('scanResult').style.display = 'none';
+}
+
+// ============================================
+// KEYBOARD SUPPORT
+// ============================================
+document.getElementById('credential').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    handleLogin();
+  }
+});
+
+// ============================================
+// CSS ANIMATION
+// ============================================
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+`;
+document.head.appendChild(style);
+
+console.log('🚀 Sistem Absensi QR Code siap digunakan!');
+console.log('📋 Backend URL:', BACKEND_URL);
+</script>
+
 </body>
 </html>

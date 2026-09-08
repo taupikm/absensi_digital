@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absensi Online QR Barcode</title>
-    <!-- Tailwind CSS untuk Desain Modern -->
+    <title>Absensi QR Barcode</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <!-- Html5-qrcode Library untuk Scanner Kamera HP -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
@@ -14,7 +12,6 @@
         <div class="bg-white rounded-lg shadow-md p-6">
             <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">Absensi QR Barcode</h1>
             
-            <!-- Form Pengaturan Sesi & Identitas Scanner -->
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">Pilih Sesi Absensi:</label>
                 <select id="selectSesi" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
@@ -28,13 +25,12 @@
                 <p class="text-xs text-gray-500 mt-1">Guru scan siswa | Admin scan guru & siswa</p>
             </div>
 
-            <!-- Kamera Scanner Section -->
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">Kamera Scanner QR:</label>
-                <div id="reader" class="w-full rounded overflow-hidden border"></div>
+                <!-- Tambahkan ID div reader yang spesifik -->
+                <div id="reader" class="w-full rounded overflow-hidden border bg-black" style="min-height: 250px;"></div>
             </div>
 
-            <!-- Status Notifikasi -->
             <div id="notifikasi" class="hidden p-4 rounded text-center font-semibold mb-4"></div>
             
             <div class="text-center text-xs text-gray-400 mt-6">
@@ -47,13 +43,20 @@
         let html5QrCode;
         let isProcessing = false;
 
-        // Ambil data konfigurasi sesi dari Backend saat halaman dimuat
         window.onload = function() {
+            if (typeof google === 'undefined' || !google.script) {
+                // Berjalan di luar Google Apps Script (misal preview lokal/GitHub biasa tanpa API bridge)
+                document.getElementById('selectSesi').innerHTML = '<option value="Sesi 1">Sesi 1 (Mode Simulasi)</option>';
+                showNotif("Berjalan dalam mode offline/preview. Hubungkan ke Google Apps Script untuk data real.", "warning");
+                initScanner();
+                return;
+            }
+
             google.script.run
                 .withSuccessHandler(function(data) {
                     let select = document.getElementById('selectSesi');
                     select.innerHTML = '';
-                    if(data.sesi && data.sesi.length > 0) {
+                    if(data && data.sesi && data.sesi.length > 0) {
                         data.sesi.forEach(function(sesi) {
                             let opt = document.createElement('option');
                             opt.value = sesi.namaSesi;
@@ -62,32 +65,39 @@
                         });
                         initScanner();
                     } else {
-                        select.innerHTML = '<option value="">Tidak ada sesi tersedia di Pengaturan</option>';
+                        select.innerHTML = '<option value="">Pengaturan Sesi Kosong / Sheet Belum Diisi</option>';
+                        showNotif("Sheet Pengaturan kosong. Harap isi data sesi di Google Sheets.", "error");
                     }
                 })
                 .withFailureHandler(function(err) {
-                    alert("Gagal memuat sesi: " + err.message);
+                    let select = document.getElementById('selectSesi');
+                    select.innerHTML = '<option value="">Gagal Memuat Sesi</option>';
+                    showNotif("Error memuat database: " + err.message, "error");
                 })
                 .getDatabase();
         };
 
         function initScanner() {
-            html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-            
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                config, 
-                onScanSuccess,
-                onScanFailure
-            ).catch(err => {
-                console.error("Gagal membuka kamera:", err);
-                showNotif("Gagal membuka kamera HP. Pastikan izin kamera diaktifkan.", "error");
-            });
+            try {
+                html5QrCode = new Html5Qrcode("reader");
+                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                
+                html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    config, 
+                    onScanSuccess,
+                    onScanFailure
+                ).catch(err => {
+                    console.error("Gagal membuka kamera:", err);
+                    showNotif("Gagal membuka kamera. Pastikan izin kamera browser diaktifkan (HTTPS/Allow).", "error");
+                });
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         function onScanSuccess(decodedText, decodedResult) {
-            if (isProcessing) return; // Cegah scan ganda secara cepat
+            if (isProcessing) return;
             
             let scannerID = document.getElementById('inputScanner').value.trim();
             let selectedSesi = document.getElementById('selectSesi').value;
@@ -105,7 +115,14 @@
             isProcessing = true;
             showNotif("Memproses QR Code: " + decodedText + "...", "info");
 
-            // Kirim data ke Backend Google Apps Script
+            if (typeof google === 'undefined' || !google.script) {
+                setTimeout(() => {
+                    showNotif("Simulasi Sukses Scan ID: " + decodedText, "success");
+                    isProcessing = false;
+                }, 1500);
+                return;
+            }
+
             google.script.run
                 .withSuccessHandler(function(response) {
                     if (response.status === "success") {
@@ -115,7 +132,7 @@
                     } else {
                         showNotif(response.message, "error");
                     }
-                    setTimeout(() => { isProcessing = false; }, 3000); // Jeda 3 detik untuk scan berikutnya
+                    setTimeout(() => { isProcessing = false; }, 3000);
                 })
                 .withFailureHandler(function(error) {
                     showNotif("Terjadi kesalahan sistem: " + error.message, "error");
@@ -125,12 +142,12 @@
         }
 
         function onScanFailure(error) {
-            // Error scan secara frame per frame (diabaikan agar tidak spam log)
+            // Abaikan error scan per frame
         }
 
         function showNotif(message, type) {
             let notif = document.getElementById('notifikasi');
-            notif.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700', 'bg-yellow-100', 'text-yellow-750', 'bg-blue-100', 'text-blue-700');
+            notif.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700', 'bg-yellow-100', 'text-yellow-800', 'bg-blue-100', 'text-blue-700');
             
             if (type === "success") {
                 notif.classList.add('bg-green-100', 'text-green-700');

@@ -3,22 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Absensi Online QR Code</title>
-    <!-- Library QR Scanner (html5-qrcode) -->
+    <title>Sistem Absensi Online</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        input, select, button { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 15px; }
         button { background: #007BFF; color: white; border: none; cursor: pointer; font-weight: bold; }
         button:hover { background: #0056b3; }
         .btn-danger { background: #dc3545; }
         .btn-danger:hover { background: #a71d2a; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
         .hidden { display: none; }
         #reader { width: 100%; margin-top: 10px; }
-        .alert { padding: 10px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
+        .alert { padding: 10px; margin: 8px 0; border-radius: 5px; font-weight: bold; font-size: 14px; }
         .alert-success { background: #d4edda; color: #155724; }
         .alert-error { background: #f8d7da; color: #721c24; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #007BFF; color: white; }
+        h4 { margin: 15px 0 5px 0; color: #333; }
     </style>
 </head>
 <body>
@@ -41,25 +46,58 @@
 
         <div id="session-container">
             <label>Pilih Sesi Absensi:</label>
-            <select id="select-sesi"></select>
+            <select id="select-sesi" onchange="loadRealtimeData()"></select>
         </div>
 
-        <div id="scanner-controls" class="hidden">
-            <button id="btn-toggle-cam" onclick="toggleCamera()">Buka Kamera Scanner</button>
-            <div id="reader" class="hidden"></div>
+        <!-- TOMBOL SCANNER GURU -->
+        <div id="teacher-scanner-controls" class="hidden">
+            <button id="btn-toggle-cam" onclick="toggleCamera('Siswa')">Buka Kamera Scanner Siswa</button>
         </div>
 
+        <!-- TOMBOL SCANNER ADMIN (2 MENU) -->
+        <div id="admin-scanner-controls" class="hidden">
+            <button id="btn-cam-siswa" class="btn-success" onclick="toggleCamera('Siswa')">Buka Kamera Scanner Siswa</button>
+            <button id="btn-cam-guru" class="btn-success" onclick="toggleCamera('Guru')">Buka Kamera Scanner Guru</button>
+        </div>
+
+        <div id="reader" class="hidden"></div>
         <div id="scan-result"></div>
-        <button class="btn-danger" onclick="logout()">Keluar</button>
+
+        <!-- TABEL MONITORING REALTIME -->
+        <div id="monitoring-section" class="hidden">
+            <h4>Tabel Kehadiran Guru</h4>
+            <div style="overflow-x:auto;">
+                <table id="table-guru">
+                    <thead>
+                        <tr><th>No</th><th>NIP</th><th>Nama</th><th>Jam Scan</th><th class="col-sesi-header">Sesi</th><th>Status</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <h4>Tabel Kehadiran Siswa</h4>
+            <div style="overflow-x:auto;">
+                <table id="table-siswa">
+                    <thead>
+                        <tr><th>No</th><th>NISN</th><th>Nama</th><th>Jam Scan</th><th class="col-sesi-header">Sesi</th><th>Status</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <button class="btn-danger" style="margin-top: 20px;" onclick="logout()">Keluar</button>
     </div>
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzX_FQZvuGxCNc3ibDghYaMrZZGlzwo9VU-BHPTEVbcXRTYSOnGdFBsVxs3OpJEZU4h/exec"; // <-- Masukkan URL Web App Google Script Anda di sini
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx2kuz9l7XZw0qwK5oQDP_8yT24Xxr3OxU7xBJEBzRHHH7ZdMfhJzQZn4TA37YdP_Hz/exec"; // <-- Ganti dengan URL Web App Anda
     let currentUser = null;
     let html5QrCode = null;
     let isCameraOpen = false;
     let appConfig = null;
+    let activeScanTarget = "Siswa"; // "Siswa" atau "Guru" (khusus admin)
+    let realtimeInterval = null;
 
     async function login() {
         const credential = document.getElementById("credential").value.trim();
@@ -91,7 +129,6 @@
         document.getElementById("dashboard-section").classList.remove("hidden");
         document.getElementById("user-info").innerText = `Halo, ${currentUser.name} (${currentUser.role})`;
 
-        // Ambil Pengaturan Sesi & Hari Libur dari Backend
         try {
             let response = await fetch(SCRIPT_URL, {
                 method: "POST",
@@ -118,11 +155,17 @@
                     selectSesi.appendChild(opt);
                 });
 
-                // Jika Admin atau Guru, tampilkan tombol buka/tutup kamera scanner
-                if (currentUser.role === "Admin" || currentUser.role === "Guru") {
-                    document.getElementById("scanner-controls").classList.remove("hidden");
+                if (currentUser.role === "Guru") {
+                    document.getElementById("teacher-scanner-controls").classList.remove("hidden");
+                    document.getElementById("monitoring-section").classList.add("hidden"); // Guru fokus absen
+                } else if (currentUser.role === "Admin") {
+                    document.getElementById("admin-scanner-controls").classList.remove("hidden");
+                    document.getElementById("monitoring-section").classList.remove("hidden");
+                    loadRealtimeData();
+                    // Auto-refresh data tabel tiap 5 detik
+                    realtimeInterval = setInterval(loadRealtimeData, 5000);
                 } else {
-                    showAlert("scan-result", "Siswa menggunakan halaman ini hanya untuk verifikasi akun. Barcode Anda discan oleh Guru/Admin.", "error");
+                    showAlert("scan-result", "Siswa hanya menggunakan halaman untuk verifikasi identitas.", "error");
                 }
             }
         } catch (err) {
@@ -130,7 +173,8 @@
         }
     }
 
-    function toggleCamera() {
+    function toggleCamera(targetType) {
+        activeScanTarget = targetType;
         if (!isCameraOpen) {
             startCamera();
         } else {
@@ -141,8 +185,15 @@
     function startCamera() {
         const readerDiv = document.getElementById("reader");
         readerDiv.classList.remove("hidden");
-        document.getElementById("btn-toggle-cam").innerText = "Tutup Kamera Scanner";
-        document.getElementById("btn-toggle-cam").className = "btn-danger";
+        
+        if (currentUser.role === "Guru") {
+            document.getElementById("btn-toggle-cam").innerText = "Tutup Kamera Scanner Siswa";
+            document.getElementById("btn-toggle-cam").className = "btn-danger";
+        } else if (currentUser.role === "Admin") {
+            document.getElementById("btn-cam-siswa").innerText = activeScanTarget === "Siswa" ? "Tutup Kamera Siswa" : "Buka Kamera Scanner Siswa";
+            document.getElementById("btn-cam-guru").innerText = activeScanTarget === "Guru" ? "Tutup Kamera Guru" : "Buka Kamera Scanner Guru";
+        }
+        
         isCameraOpen = true;
 
         html5QrCode = new Html5Qrcode("reader");
@@ -161,9 +212,7 @@
             html5QrCode.stop().then(() => {
                 html5QrCode.clear();
                 cleanupCameraUI();
-            }).catch(err => {
-                cleanupCameraUI();
-            });
+            }).catch(() => { cleanupCameraUI(); });
         } else {
             cleanupCameraUI();
         }
@@ -171,54 +220,98 @@
 
     function cleanupCameraUI() {
         document.getElementById("reader").classList.add("hidden");
-        document.getElementById("btn-toggle-cam").innerText = "Buka Kamera Scanner";
-        document.getElementById("btn-toggle-cam").className = "";
+        if (currentUser.role === "Guru") {
+            document.getElementById("btn-toggle-cam").innerText = "Buka Kamera Scanner Siswa";
+            document.getElementById("btn-toggle-cam").className = "";
+        } else if (currentUser.role === "Admin") {
+            document.getElementById("btn-cam-siswa").innerText = "Buka Kamera Scanner Siswa";
+            document.getElementById("btn-cam-siswa").className = "btn-success";
+            document.getElementById("btn-cam-guru").innerText = "Buka Kamera Scanner Guru";
+            document.getElementById("btn-cam-guru").className = "btn-success";
+        }
         isCameraOpen = false;
     }
 
-async function onScanSuccess(decodedText) {
-    // Hentikan sementara scanner agar tidak terjadi multi-scan berturut-turut
-    if (html5QrCode && isCameraOpen) {
-        await html5QrCode.pause();
-    }
-
-    let selectedSesi = document.getElementById("select-sesi").value;
-
-    let payload = {
-        action: "scan",
-        scannerRole: currentUser.role,
-        scannerId: currentUser.id,
-        scannedCode: decodedText.trim(),
-        sesi: selectedSesi,
-        tanggal: appConfig.date
-    };
-
-    try {
-        let response = await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-        });
-        let result = await response.json();
-
-        if (result.status === "success") {
-            showAlert("scan-result", result.message, "success");
-        } else {
-            showAlert("scan-result", result.message, "error");
-        }
-    } catch (err) {
-        showAlert("scan-result", "Gagal mengirim data absen ke server.", "error");
-    }
-
-    // Kamera langsung di-resume kembali setelah 2.5 detik (menepati batas maksimal 3 detik)
-    setTimeout(async () => {
+    async function onScanSuccess(decodedText) {
         if (html5QrCode && isCameraOpen) {
-            await html5QrCode.resume();
+            await html5QrCode.pause();
         }
-    }, 2500);
-}
+
+        let selectedSesi = document.getElementById("select-sesi").value;
+
+        let payload = {
+            action: "scan",
+            scannerRole: currentUser.role,
+            scannerId: currentUser.id,
+            scannedCode: decodedText.trim(),
+            sesi: selectedSesi,
+            tanggal: appConfig.date,
+            scanTargetType: activeScanTarget // Memberitahu backend apakah admin sedang scan Siswa atau Guru
+        };
+
+        try {
+            let response = await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            let result = await response.json();
+
+            if (result.status === "success") {
+                showAlert("scan-result", result.message, "success");
+                if (currentUser.role === "Admin") loadRealtimeData(); // Langsung perbarui tabel
+            } else {
+                showAlert("scan-result", result.message, "error");
+            }
+        } catch (err) {
+            showAlert("scan-result", "Gagal mengirim data absen ke server.", "error");
+        }
+
+        setTimeout(async () => {
+            if (html5QrCode && isCameraOpen) {
+                await html5QrCode.resume();
+            }
+        }, 2500);
+    }
+
+    async function loadRealtimeData() {
+        let selectedSesi = document.getElementById("select-sesi").value;
+        try {
+            let response = await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "get_realtime_data", sesi: selectedSesi, tanggal: appConfig.date })
+            });
+            let res = await response.json();
+            if (res.status === "success") {
+                populateTable("table-guru", res.guruData);
+                populateTable("table-siswa", res.siswaData);
+            }
+        } catch (e) {}
+    }
+
+    function populateTable(tableId, data) {
+        let tbody = document.querySelector(`#${tableId} tbody`);
+        tbody.innerHTML = "";
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="color: #777;">Belum ada data absensi</td></tr>`;
+            return;
+        }
+        data.forEach((row, index) => {
+            let tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${row.id}</td>
+                <td>${row.nama}</td>
+                <td>${row.jam}</td>
+                <td>${row.sesi}</td>
+                <td><b>${row.status}</b></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
 
     function logout() {
         if (isCameraOpen) stopCamera();
+        if (realtimeInterval) clearInterval(realtimeInterval);
         currentUser = null;
         document.getElementById("credential").value = "";
         document.getElementById("dashboard-section").classList.add("hidden");

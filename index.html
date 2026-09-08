@@ -155,6 +155,11 @@
 
   <!-- Script Logika Frontend -->
   <script>
+    // ==========================================
+    // MASUKKAN WEB APP URL GOOGLE APPS SCRIPT ANDA DI SINI
+    // ==========================================
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxO7az3I3TOUaV5VZNO8HIiValZnCJwvPwXvrLzyHOIHkWGBP8nH6KYTuEMRYnghyVsFQ/exec"; 
+
     let html5QrCode = null;
     let isCameraOpen = false;
     let scannerSession = { peran: '', id: '', nama: '' };
@@ -165,6 +170,24 @@
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       document.getElementById('current-date-display').innerText = new Date().toLocaleDateString('id-ID', options);
     });
+
+    // Fungsi helper untuk memanggil Backend Apps Script dari GitHub Pages
+    function callBackend(functionName, arg, successCallback, failureCallback) {
+      const payload = { function: functionName, argument: arg };
+      
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (successCallback) successCallback(data);
+      })
+      .catch(err => {
+        if (failureCallback) failureCallback(err);
+        else alert("Koneksi gagal: " + err);
+      });
+    }
 
     function handleLogin() {
       const peran = document.getElementById('login-role').value;
@@ -178,64 +201,50 @@
       }
       errEl.classList.add('hidden');
 
-      // Jika menggunakan GitHub Pages terpisah, arahkan google.script.run ke Apps Script Web App URL Anda.
-      // Jika di-deploy langsung dari Apps Script, fungsi ini berjalan otomatis.
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            if (res.success) {
-              scannerSession.peran = res.peran;
-              scannerSession.id = res.nip || 'ADMIN';
-              scannerSession.nama = res.nama;
+      // Panggil backend via Web App URL
+      callBackend('verifyPin', { peran: peran, pin: pin }, function(res) {
+        if (res.success) {
+          scannerSession.peran = res.peran;
+          scannerSession.id = res.nip || 'ADMIN';
+          scannerSession.nama = res.nama;
 
-              document.getElementById('login-modal').classList.add('hidden');
-              document.getElementById('main-content').classList.remove('hidden');
-              document.getElementById('scanner-identity').innerText = res.nama + " (" + res.peran + ")";
-              loadInitialData();
-            } else {
-              errEl.innerText = res.message;
-              errEl.classList.remove('hidden');
-            }
-          })
-          .withFailureHandler(function(err) {
-            errEl.innerText = "Kesalahan koneksi: " + err.message;
-            errEl.classList.remove('hidden');
-          })
-          .verifyPin(peran, pin);
-      } else {
-        alert("Mode GitHub Pages memerlukan endpoint URL Google Apps Script yang terhubung.");
-      }
+          document.getElementById('login-modal').classList.add('hidden');
+          document.getElementById('main-content').classList.remove('hidden');
+          document.getElementById('scanner-identity').innerText = res.nama + " (" + res.peran + ")";
+          loadInitialData();
+        } else {
+          errEl.innerText = res.message;
+          errEl.classList.remove('hidden');
+        }
+      }, function(err) {
+        errEl.innerText = "Terjadi kesalahan koneksi ke server.";
+        errEl.classList.remove('hidden');
+      });
     }
 
     function loadInitialData() {
-      google.script.run
-        .withSuccessHandler(function(data) {
-          appData = data;
-          if (data.isLibur) {
-            document.getElementById('libur-banner').classList.remove('hidden');
-            document.getElementById('libur-desc').innerText = data.keteranganLibur;
-          }
+      callBackend('getInitialData', {}, function(data) {
+        appData = data;
+        if (data.isLibur) {
+          document.getElementById('libur-banner').classList.remove('hidden');
+          document.getElementById('libur-desc').innerText = data.keteranganLibur;
+        }
 
-          const sessionSelect = document.getElementById('session-selector');
-          sessionSelect.innerHTML = '';
-          if (data.sessions && data.sessions.length > 0) {
-            data.sessions.forEach(s => {
-              const opt = document.createElement('option');
-              opt.value = s.namaSesi;
-              opt.text = s.namaSesi + " (" + s.mulaiTW + " - " + s.tutupSesi + ")";
-              sessionSelect.appendChild(opt);
-            });
-          }
-        })
-        .getInitialData();
+        const sessionSelect = document.getElementById('session-selector');
+        sessionSelect.innerHTML = '';
+        if (data.sessions && data.sessions.length > 0) {
+          data.sessions.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.namaSesi;
+            opt.text = s.namaSesi + " (" + s.mulaiTW + " - " + s.tutupSesi + ")";
+            sessionSelect.appendChild(opt);
+          });
+        }
+      });
     }
 
     function toggleCamera() {
-      if (!isCameraOpen) {
-        openCamera();
-      } else {
-        closeCamera();
-      }
+      if (!isCameraOpen) { openCamera(); } else { closeCamera(); }
     }
 
     function openCamera() {
@@ -258,7 +267,7 @@
         onScanFailure
       ).catch(err => {
         console.error("Gagal membuka kamera:", err);
-        alert("Tidak dapat mengakses kamera HP. Pastikan izin kamera telah diberikan.");
+        alert("Tidak dapat mengakses kamera HP. Pastikan izin kamera diberikan.");
         closeCamera();
       });
     }
@@ -268,10 +277,7 @@
         html5QrCode.stop().then(() => {
           html5QrCode.clear();
           resetCameraUI();
-        }).catch(err => {
-          console.error("Gagal menghentikan kamera:", err);
-          resetCameraUI();
-        });
+        }).catch(err => { resetCameraUI(); });
       } else {
         resetCameraUI();
       }
@@ -287,35 +293,28 @@
     function onScanSuccess(decodedText, decodedResult) {
       const currentSessionName = document.getElementById('session-selector').value;
 
-      google.script.run
-        .withSuccessHandler(function(res) {
-          const card = document.getElementById('scan-result-card');
-          card.classList.remove('hidden');
-          if (res.success) {
-            document.getElementById('res-nama').innerText = res.data.nama;
-            document.getElementById('res-id').innerText = res.data.peran + " (" + res.data.id + ")";
-            document.getElementById('res-sesi').innerText = res.data.sesi;
-            document.getElementById('res-status').innerText = res.data.status + " [" + res.data.waktu + "]";
-            playBeep();
-          } else {
-            alert("Peringatan: " + res.message);
-          }
-        })
-        .withFailureHandler(function(err) {
-          alert("Gagal memproses scan: " + err.message);
-        })
-        .processScan({
-          code: decodedText,
-          peranScanner: scannerSession.peran,
-          idScanner: scannerSession.id,
-          namaScanner: scannerSession.nama,
-          currentSessionName: currentSessionName
-        });
+      callBackend('processScan', {
+        code: decodedText,
+        peranScanner: scannerSession.peran,
+        idScanner: scannerSession.id,
+        namaScanner: scannerSession.nama,
+        currentSessionName: currentSessionName
+      }, function(res) {
+        const card = document.getElementById('scan-result-card');
+        card.classList.remove('hidden');
+        if (res.success) {
+          document.getElementById('res-nama').innerText = res.data.nama;
+          document.getElementById('res-id').innerText = res.data.peran + " (" + res.data.id + ")";
+          document.getElementById('res-sesi').innerText = res.data.sesi;
+          document.getElementById('res-status').innerText = res.data.status + " [" + res.data.waktu + "]";
+          playBeep();
+        } else {
+          alert("Peringatan: " + res.message);
+        }
+      });
     }
 
-    function onScanFailure(error) {
-      // Ignored during active scanning frames
-    }
+    function onScanFailure(error) {}
 
     function playBeep() {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -329,6 +328,7 @@
       osc.start();
       osc.stop(ctx.currentTime + 0.15);
     }
+  </script>
   </script>
 </body>
 </html>

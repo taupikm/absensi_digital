@@ -61,7 +61,7 @@
 
           <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-indigo-200 transition duration-200 flex items-center justify-center space-x-2">
             <i data-lucide="log-in" class="w-5 h-5"></i>
-            <span>Masuk & Buka Sistem</span>
+            <span>Masuk & Buka Kamera</span>
           </button>
         </div>
       </div>
@@ -155,10 +155,8 @@
 
   <!-- Script Logika Frontend -->
   <script>
-    // ==========================================
-    // MASUKKAN WEB APP URL GOOGLE APPS SCRIPT ANDA DI SINI
-    // ==========================================
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzk1l9wfQmb0AyM1TMDaVdgvpnVBQ8qnMIDxY0MaXwFh6dAwXc6TFuYvT9oStKA2WPU/exec"; 
+    // GANTI URL DI BAWAH INI DENGAN WEB APP URL GOOGLE APPS SCRIPT ANDA
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVmfiCVPfkMtDQ7g2YeFWuxbFZrQRZOmqKpuyCK1ciVIMfs0P1D8eXstHnuA2QAbtmmA/exec"; 
 
     let html5QrCode = null;
     let isCameraOpen = false;
@@ -171,7 +169,6 @@
       document.getElementById('current-date-display').innerText = new Date().toLocaleDateString('id-ID', options);
     });
 
-    // Fungsi helper untuk memanggil Backend Apps Script dari GitHub Pages
     function callBackend(functionName, arg, successCallback, failureCallback) {
       const payload = { function: functionName, argument: arg };
       
@@ -201,7 +198,6 @@
       }
       errEl.classList.add('hidden');
 
-      // Panggil backend via Web App URL
       callBackend('verifyPin', { peran: peran, pin: pin }, function(res) {
         if (res.success) {
           scannerSession.peran = res.peran;
@@ -328,7 +324,6 @@
       osc.start();
       osc.stop(ctx.currentTime + 0.15);
     }
-  </script>
   </script>
 </body>
 </html>

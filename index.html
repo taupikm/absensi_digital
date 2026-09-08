@@ -12,39 +12,54 @@
         <div class="bg-white rounded-lg shadow-md p-6">
             <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">Absensi QR Barcode</h1>
             
-            <!-- Pilih Sesi -->
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Pilih Sesi Absensi:</label>
-                <select id="selectSesi" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    <option value="">Memuat Sesi...</option>
-                </select>
+            <!-- SECTION LOGIN -->
+            <div id="loginSection" class="mb-4">
+                <div class="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
+                    <h2 class="font-bold text-blue-700 text-sm mb-1">Silakan Login Terlebih Dahulu</h2>
+                    <p class="text-xs text-gray-600 mb-3">Masukkan PIN Guru (4 Digit) atau PIN Admin (5 Digit).</p>
+                    <input type="password" id="inputPIN" maxlength="5" placeholder="Masukkan PIN..." class="w-full border rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center tracking-widest text-lg">
+                    <button type="button" onclick="prosesLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200">
+                        Login Sistem
+                    </button>
+                </div>
             </div>
 
-            <!-- ID / PIN Scanner -->
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">ID / NIP / PIN Scanner (Guru / Admin):</label>
-                <input type="password" id="inputScanner" placeholder="Masukkan PIN / NIP / Kode Admin" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                <p class="text-xs text-gray-500 mt-1">Wajib diisi sebelum melakukan scan barcode!</p>
+            <!-- SECTION UTAMA (Disembunyikan sebelum login berhasil) -->
+            <div id="mainSection" class="hidden">
+                <div class="bg-green-50 border border-green-200 rounded p-3 mb-4 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-gray-500">Login sebagai:</p>
+                        <p id="userInfo" class="font-bold text-green-800 text-sm">-</p>
+                    </div>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded">
+                        Logout
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Pilih Sesi Absensi:</label>
+                    <select id="selectSesi" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="">Memuat Sesi...</option>
+                    </select>
+                </div>
+
+                <div class="flex space-x-2 mb-4">
+                    <button type="button" onclick="bukaKamera()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition">
+                        Buka Kamera
+                    </button>
+                    <button type="button" onclick="tutupKamera()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition">
+                        Tutup Kamera
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Kamera Scanner QR:</label>
+                    <div id="reader" class="w-full rounded overflow-hidden border bg-black" style="min-height: 250px;"></div>
+                </div>
             </div>
 
-            <!-- Kontrol Tombol Buka/Tutup Kamera -->
-            <div class="flex space-x-2 mb-4">
-                <button type="button" onclick="bukaKamera()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-200">
-                    Buka Kamera
-                </button>
-                <button type="button" onclick="tutupKamera()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-200">
-                    Tutup Kamera
-                </button>
-            </div>
-
-            <!-- Kamera Scanner QR -->
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Kamera Scanner QR:</label>
-                <div id="reader" class="w-full rounded overflow-hidden border bg-black" style="min-height: 250px;"></div>
-            </div>
-
-            <!-- Status Notifikasi -->
-            <div id="notifikasi" class="hidden p-4 rounded text-center font-semibold mb-4"></div>
+            <!-- Notifikasi Umum -->
+            <div id="notifikasi" class="hidden p-3 rounded text-center font-semibold mb-4 text-sm"></div>
             
             <div class="text-center text-xs text-gray-400 mt-6">
                 Sistem Absensi Dinamis Berbasis Google Apps Script
@@ -56,14 +71,48 @@
         let html5QrCode = null;
         let isProcessing = false;
         let isCameraRunning = false;
+        let currentScanner = { id: "", role: "", nama: "" };
 
-        window.onload = function() {
-            if (typeof google === 'undefined' || !google.script) {
-                document.getElementById('selectSesi').innerHTML = '<option value="Sesi 1">Sesi 1 (Mode Simulasi)</option>';
-                showNotif("Berjalan dalam mode offline/preview.", "warning");
+        function prosesLogin() {
+            let pin = document.getElementById('inputPIN').value.trim();
+            if (!pin) {
+                showNotif("Masukkan PIN terlebih dahulu!", "error");
                 return;
             }
 
+            showNotif("Memverifikasi PIN...", "info");
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res.status === "success") {
+                        currentScanner = { id: res.id, role: res.role, nama: res.nama };
+                        document.getElementById('userInfo').innerText = `${res.nama} (${res.role})`;
+                        
+                        // Sembunyikan login, tampilkan menu utama
+                        document.getElementById('loginSection').classList.add('hidden');
+                        document.getElementById('mainSection').classList.remove('hidden');
+                        hideNotif();
+                        loadSesiList();
+                    } else {
+                        showNotif(res.message, "error");
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    showNotif("Error: " + err.message, "error");
+                })
+                .verifikasiLogin(pin);
+        }
+
+        function logout() {
+            tutupKamera();
+            currentScanner = { id: "", role: "", nama: "" };
+            document.getElementById('inputPIN').value = "";
+            document.getElementById('mainSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+            showNotif("Berhasil logout.", "info");
+        }
+
+        function loadSesiList() {
             google.script.run
                 .withSuccessHandler(function(data) {
                     let select = document.getElementById('selectSesi');
@@ -77,50 +126,30 @@
                         });
                     } else {
                         select.innerHTML = '<option value="">Pengaturan Sesi Kosong</option>';
-                        showNotif("Sheet Pengaturan kosong. Harap isi data sesi di Google Sheets.", "error");
                     }
                 })
-                .withFailureHandler(function(err) {
-                    let select = document.getElementById('selectSesi');
-                    select.innerHTML = '<option value="">Gagal Memuat Sesi</option>';
-                    showNotif("Error memuat database: " + err.message, "error");
-                })
                 .getDatabase();
-        };
+        }
 
         function bukaKamera() {
-            let scannerID = document.getElementById('inputScanner').value.trim();
-            if (!scannerID) {
-                showNotif("Mohon isi ID/PIN Scanner (Guru/Admin) terlebih dahulu sebelum membuka kamera!", "error");
-                return;
-            }
-
-            if (isCameraRunning) {
-                showNotif("Kamera sudah aktif.", "info");
-                return;
-            }
-
+            if (isCameraRunning) return;
             try {
                 if (!html5QrCode) {
                     html5QrCode = new Html5Qrcode("reader");
                 }
-                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-                
                 html5QrCode.start(
                     { facingMode: "environment" }, 
-                    config, 
-                    onScanSuccess,
+                    { fps: 10, qrbox: { width: 250, height: 250 } }, 
+                    onScanSuccess, 
                     onScanFailure
                 ).then(() => {
                     isCameraRunning = true;
-                    showNotif("Kamera berhasil diaktifkan. Silakan scan barcode.", "info");
+                    showNotif("Kamera aktif. Silakan scan barcode.", "info");
                 }).catch(err => {
-                    console.error("Gagal membuka kamera:", err);
-                    showNotif("Gagal membuka kamera. Pastikan izin kamera browser diaktifkan.", "error");
+                    showNotif("Gagal membuka kamera. Perizinan browser ditolak.", "error");
                 });
             } catch (e) {
-                console.error(e);
-                showNotif("Terjadi kesalahan saat menginisialisasi kamera.", "error");
+                showNotif("Terjadi kesalahan pada kamera.", "error");
             }
         }
 
@@ -128,52 +157,26 @@
             if (html5QrCode && isCameraRunning) {
                 html5QrCode.stop().then(() => {
                     isCameraRunning = false;
-                    showNotif("Kamera berhasil ditutup.", "info");
-                }).catch(err => {
-                    console.error("Gagal menghentikan kamera: ", err);
+                    showNotif("Kamera ditutup.", "info");
                 });
-            } else {
-                showNotif("Kamera sedang tidak aktif.", "info");
             }
         }
 
         function onScanSuccess(decodedText, decodedResult) {
-            // Validasi ketat sebelum mengirim data: Pastikan ID Scanner tidak kosong
-            let scannerID = document.getElementById('inputScanner').value.trim();
             let selectedSesi = document.getElementById('selectSesi').value;
-
-            if (!scannerID) {
-                if (!isProcessing) {
-                    isProcessing = true;
-                    showNotif("GAGAL: Mohon isi ID / PIN Scanner (Guru/Admin) terlebih dahulu!", "error");
-                    setTimeout(() => { isProcessing = false; }, 4000);
-                }
-                return; // Batalkan pengiriman ke sheet jika kosong
-            }
-
             if (!selectedSesi) {
                 if (!isProcessing) {
                     isProcessing = true;
-                    showNotif("GAGAL: Pilih sesi absensi terlebih dahulu!", "error");
-                    setTimeout(() => { isProcessing = false; }, 4000);
+                    showNotif("Pilih sesi absensi terlebih dahulu!", "error");
+                    setTimeout(() => { isProcessing = false; }, 3000);
                 }
                 return;
             }
 
-            if (isProcessing) return; // Mencegah spam scan ganda
-            
+            if (isProcessing) return;
             isProcessing = true;
-            showNotif("Memproses QR Code: " + decodedText + "...", "info");
+            showNotif("Memproses ID: " + decodedText + "...", "info");
 
-            if (typeof google === 'undefined' || !google.script) {
-                setTimeout(() => {
-                    showNotif("Simulasi Sukses Scan ID: " + decodedText, "success");
-                    isProcessing = false;
-                }, 1500);
-                return;
-            }
-
-            // Kirim data ke backend Google Apps Script
             google.script.run
                 .withSuccessHandler(function(response) {
                     if (response.status === "success") {
@@ -186,32 +189,29 @@
                     setTimeout(() => { isProcessing = false; }, 3000);
                 })
                 .withFailureHandler(function(error) {
-                    showNotif("Terjadi kesalahan sistem: " + error.message, "error");
+                    showNotif("Kesalahan sistem: " + error.message, "error");
                     isProcessing = false;
                 })
-                .prosesAbsensi(scannerID, decodedText, selectedSesi);
+                .prosesAbsensi(currentScanner.id, currentScanner.role, currentScanner.nama, decodedText, selectedSesi);
         }
 
-        function onScanFailure(error) {
-            // Abaikan error per frame agar tidak memicu notifikasi berlebih
-        }
+        function onScanFailure(error) {}
 
         function showNotif(message, type) {
             let notif = document.getElementById('notifikasi');
             notif.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700', 'bg-yellow-100', 'text-yellow-800', 'bg-blue-100', 'text-blue-700');
             
-            if (type === "success") {
-                notif.classList.add('bg-green-100', 'text-green-700');
-            } else if (type === "error") {
-                notif.classList.add('bg-red-100', 'text-red-700');
-            } else if (type === "warning") {
-                notif.classList.add('bg-yellow-100', 'text-yellow-800');
-            } else {
-                notif.classList.add('bg-blue-100', 'text-blue-700');
-            }
+            if (type === "success") notif.classList.add('bg-green-100', 'text-green-700');
+            else if (type === "error") notif.classList.add('bg-red-100', 'text-red-700');
+            else if (type === "warning") notif.classList.add('bg-yellow-100', 'text-yellow-800');
+            else notif.classList.add('bg-blue-100', 'text-blue-700');
             
             notif.innerText = message;
             notif.classList.remove('hidden');
+        }
+
+        function hideNotif() {
+            document.getElementById('notifikasi').classList.add('hidden');
         }
     </script>
 </body>

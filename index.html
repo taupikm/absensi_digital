@@ -15,6 +15,8 @@
         .btn-danger:hover { background: #a71d2a; }
         .btn-success { background: #28a745; }
         .btn-success:hover { background: #218838; }
+        .btn-warning { background: #ffc107; color: #000; }
+        .btn-warning:hover { background: #e0a800; }
         .hidden { display: none; }
         #reader { width: 100%; margin-top: 10px; }
         .alert { padding: 10px; margin: 8px 0; border-radius: 5px; font-weight: bold; font-size: 14px; }
@@ -24,6 +26,9 @@
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
         th { background-color: #007BFF; color: white; }
         h4 { margin: 15px 0 5px 0; color: #333; }
+        .camera-flex { display: flex; gap: 10px; margin-top: 10px; }
+        .camera-flex button { flex: 1; }
+        .admin-panel { background: #eef2f7; padding: 12px; border-radius: 6px; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -47,18 +52,70 @@
             <select id="select-sesi" onchange="loadRealtimeData()"></select>
         </div>
 
+        <!-- TOMBOL SCANNER GURU -->
         <div id="teacher-scanner-controls" class="hidden">
             <button id="btn-toggle-cam" onclick="toggleCamera('Siswa')">Buka Kamera Scanner Siswa</button>
         </div>
 
-        <div id="admin-scanner-controls" class="hidden">
-            <button id="btn-cam-siswa" class="btn-success" onclick="toggleCamera('Siswa')">Buka Kamera Scanner Siswa</button>
-            <button id="btn-cam-guru" class="btn-success" onclick="toggleCamera('Guru')">Buka Kamera Scanner Guru</button>
+        <!-- TOMBOL SCANNER ADMIN (2 BERDAMPINGAN DI ATAS) -->
+        <div id="admin-scanner-controls" class="hidden camera-flex">
+            <button id="btn-cam-siswa" class="btn-success" onclick="switchCameraTarget('Siswa')">Buka Kamera Siswa</button>
+            <button id="btn-cam-guru" class="btn-success" onclick="switchCameraTarget('Guru')">Buka Kamera Guru</button>
         </div>
 
         <div id="reader" class="hidden"></div>
         <div id="scan-result"></div>
 
+        <!-- PANEL ADMIN KHUSUS PENGATURAN & IZIN -->
+        <div id="admin-menu-section" class="hidden admin-panel">
+            <h4>Panel Kontrol Admin</h4>
+            <button class="btn-warning" onclick="toggleAdminModal('modal-sesi')">Pengaturan Sesi Dinamis</button>
+            <button class="btn-warning" onclick="toggleAdminModal('modal-izin')">Input Izin / Sakit</button>
+            <button class="btn-warning" onclick="toggleAdminModal('modal-libur')">Input Hari Libur</button>
+        </div>
+
+        <!-- MODAL / CONTAINER PENGATURAN SESI -->
+        <div id="modal-sesi" class="hidden admin-panel">
+            <h4>Kelola Sesi Absensi</h4>
+            <div id="sesi-inputs-container"></div>
+            <button onclick="addSessionRow()">+ Tambah Sesi</button>
+            <button class="btn-success" onclick="saveSessionsToCloud()">Simpan Perubahan Sesi</button>
+            <button class="btn-danger" onclick="toggleAdminModal('modal-sesi')">Tutup</button>
+        </div>
+
+        <!-- MODAL / CONTAINER IZIN SAKIT -->
+        <div id="modal-izin" class="hidden admin-panel">
+            <h4>Form Input Izin / Sakit</h4>
+            <label>Pilih Peran:</label>
+            <select id="permit-role" onchange="populatePermitNames()">
+                <option value="Siswa">Siswa</option>
+                <option value="Guru">Guru</option>
+            </select>
+            <label>Pilih Nama:</label>
+            <select id="permit-name"></select>
+            <label>Status:</label>
+            <select id="permit-type">
+                <option value="Izin">Izin (I)</option>
+                <option value="Sakit">Sakit (S)</option>
+            </select>
+            <label>Keterangan:</label>
+            <input type="text" id="permit-desc" placeholder="Alasan / Keterangan">
+            <button class="btn-success" onclick="submitPermit()">Simpan Izin/Sakit</button>
+            <button class="btn-danger" onclick="toggleAdminModal('modal-izin')">Tutup</button>
+        </div>
+
+        <!-- MODAL / CONTAINER HARI LIBUR -->
+        <div id="modal-libur" class="hidden admin-panel">
+            <h4>Form Input Hari Libur</h4>
+            <label>Tanggal Libur:</label>
+            <input type="date" id="holiday-date">
+            <label>Keterangan Libur:</label>
+            <input type="text" id="holiday-desc" placeholder="Misal: Libur Nasional">
+            <button class="btn-success" onclick="submitHoliday()">Simpan Hari Libur</button>
+            <button class="btn-danger" onclick="toggleAdminModal('modal-libur')">Tutup</button>
+        </div>
+
+        <!-- TABEL MONITORING REALTIME -->
         <div id="monitoring-section" class="hidden">
             <h4>Tabel Kehadiran Guru</h4>
             <div style="overflow-x:auto;">
@@ -86,12 +143,13 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyilUesIiDl01qlHcER3g14NF0KR5BkONz4AqHfELFRaCSYzT0l1yBlYlsT05JzECWB/exec"; // <-- Ganti dengan URL Web App Anda
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzv8b1L6PkHO32_9eCv_x_XGnSwB34Eru1JnoYmWTjTNjJcGOEH6oELWQWs17jAw-4/exec"; // <-- Ganti dengan URL Web App Anda
     let currentUser = null;
     let html5QrCode = null;
     let isCameraOpen = false;
-    let appConfig = null;
     let activeScanTarget = "Siswa";
+    let appConfig = null;
+    let adminDataCache = null;
     let realtimeInterval = null;
 
     async function login() {
@@ -152,18 +210,34 @@
 
                 if (currentUser.role === "Guru") {
                     document.getElementById("teacher-scanner-controls").classList.remove("hidden");
-                    document.getElementById("monitoring-section").classList.add("hidden");
                 } else if (currentUser.role === "Admin") {
                     document.getElementById("admin-scanner-controls").classList.remove("hidden");
+                    document.getElementById("admin-menu-section").classList.remove("hidden");
                     document.getElementById("monitoring-section").classList.remove("hidden");
+                    loadAdminDataCache();
                     loadRealtimeData();
                     realtimeInterval = setInterval(loadRealtimeData, 5000);
-                } else {
-                    showAlert("scan-result", "Siswa hanya menggunakan halaman untuk verifikasi identitas.", "error");
                 }
             }
         } catch (err) {
             console.error(err);
+        }
+    }
+
+    // Tombol Kamera Admin Berdampingan (Siswa & Guru)
+    async function switchCameraTarget(targetType) {
+        if (isCameraOpen) {
+            await stopCamera();
+            // Jika target berubah, langsung buka kembali kamera untuk target baru
+            if (activeScanTarget !== targetType) {
+                activeScanTarget = targetType;
+                startCamera();
+            } else {
+                activeScanTarget = targetType; // Ditutup total
+            }
+        } else {
+            activeScanTarget = targetType;
+            startCamera();
         }
     }
 
@@ -184,8 +258,17 @@
             document.getElementById("btn-toggle-cam").innerText = "Tutup Kamera Scanner Siswa";
             document.getElementById("btn-toggle-cam").className = "btn-danger";
         } else if (currentUser.role === "Admin") {
-            document.getElementById("btn-cam-siswa").innerText = activeScanTarget === "Siswa" ? "Tutup Kamera Siswa" : "Buka Kamera Scanner Siswa";
-            document.getElementById("btn-cam-guru").innerText = activeScanTarget === "Guru" ? "Tutup Kamera Guru" : "Buka Kamera Scanner Guru";
+            if (activeScanTarget === "Siswa") {
+                document.getElementById("btn-cam-siswa").innerText = "Tutup Kamera Siswa";
+                document.getElementById("btn-cam-siswa").className = "btn-danger";
+                document.getElementById("btn-cam-guru").innerText = "Buka Kamera Guru";
+                document.getElementById("btn-cam-guru").className = "btn-success";
+            } else {
+                document.getElementById("btn-cam-guru").innerText = "Tutup Kamera Guru";
+                document.getElementById("btn-cam-guru").className = "btn-danger";
+                document.getElementById("btn-cam-siswa").innerText = "Buka Kamera Siswa";
+                document.getElementById("btn-cam-siswa").className = "btn-success";
+            }
         }
         
         isCameraOpen = true;
@@ -201,15 +284,14 @@
         });
     }
 
-    function stopCamera() {
+    async function stopCamera() {
         if (html5QrCode && isCameraOpen) {
-            html5QrCode.stop().then(() => {
+            try {
+                await html5QrCode.stop();
                 html5QrCode.clear();
-                cleanupCameraUI();
-            }).catch(() => { cleanupCameraUI(); });
-        } else {
-            cleanupCameraUI();
+            } catch(e) {}
         }
+        cleanupCameraUI();
     }
 
     function cleanupCameraUI() {
@@ -218,9 +300,9 @@
             document.getElementById("btn-toggle-cam").innerText = "Buka Kamera Scanner Siswa";
             document.getElementById("btn-toggle-cam").className = "";
         } else if (currentUser.role === "Admin") {
-            document.getElementById("btn-cam-siswa").innerText = "Buka Kamera Scanner Siswa";
+            document.getElementById("btn-cam-siswa").innerText = "Buka Kamera Siswa";
             document.getElementById("btn-cam-siswa").className = "btn-success";
-            document.getElementById("btn-cam-guru").innerText = "Buka Kamera Scanner Guru";
+            document.getElementById("btn-cam-guru").innerText = "Buka Kamera Guru";
             document.getElementById("btn-cam-guru").className = "btn-success";
         }
         isCameraOpen = false;
@@ -232,7 +314,6 @@
         }
 
         let selectedSesi = document.getElementById("select-sesi").value;
-
         let payload = {
             action: "scan",
             scannerRole: currentUser.role,
@@ -300,6 +381,133 @@
             `;
             tbody.appendChild(tr);
         });
+    }
+
+    // Fungsi Pengaturan Admin & Modal
+    function toggleAdminModal(modalId) {
+        let el = document.getElementById(modalId);
+        if (el.classList.contains("hidden")) {
+            el.classList.remove("hidden");
+            if (modalId === 'modal-sesi') renderSessionInputs();
+        } else {
+            el.classList.add("hidden");
+        }
+    }
+
+    async function loadAdminDataCache() {
+        try {
+            let res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "get_admin_data" }) });
+            let data = await res.json();
+            if (data.status === "success") {
+                adminDataCache = data;
+                populatePermitNames();
+            }
+        } catch(e) {}
+    }
+
+    function renderSessionInputs() {
+        let container = document.getElementById("sesi-inputs-container");
+        container.innerHTML = "";
+        if (!appConfig || !appConfig.sessions) return;
+
+        appConfig.sessions.forEach((s, idx) => {
+            let div = document.createElement("div");
+            div.style.cssText = "border: 1px solid #ccc; padding: 8px; margin-bottom: 8px; border-radius: 4px;";
+            div.innerHTML = `
+                <label>Nama Sesi:</label><input type="text" class="inp-sesi-name" value="${s.namaSesi}">
+                <label>Mulai TW:</label><input type="time" class="inp-mulai" value="${s.mulaiTW}">
+                <label>Batas TW/TL:</label><input type="time" class="inp-batas" value="${s.batasTWTL}">
+                <label>Tutup Sesi:</label><input type="time" class="inp-tutup" value="${s.tutupSesi}">
+                <button class="btn-danger" style="margin-top:5px;" onclick="this.parentElement.remove()">Hapus Sesi Ini</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function addSessionRow() {
+        let container = document.getElementById("sesi-inputs-container");
+        let div = document.createElement("div");
+        div.style.cssText = "border: 1px solid #ccc; padding: 8px; margin-bottom: 8px; border-radius: 4px;";
+        div.innerHTML = `
+            <label>Nama Sesi:</label><input type="text" class="inp-sesi-name" placeholder="Sesi Baru">
+            <label>Mulai TW:</label><input type="time" class="inp-mulai" value="07:00">
+            <label>Batas TW/TL:</label><input type="time" class="inp-batas" value="07:15">
+            <label>Tutup Sesi:</label><input type="time" class="inp-tutup" value="09:00">
+            <button class="btn-danger" style="margin-top:5px;" onclick="this.parentElement.remove()">Hapus Sesi Ini</button>
+        `;
+        container.appendChild(div);
+    }
+
+    async function saveSessionsToCloud() {
+        let names = document.querySelectorAll(".inp-sesi-name");
+        let mulais = document.querySelectorAll(".inp-mulai");
+        let batass = document.querySelectorAll(".inp-batas");
+        let tutups = document.querySelectorAll(".inp-tutup");
+        
+        let newSessions = [];
+        for(let i=0; i<names.length; i++) {
+            newSessions.push({
+                namaSesi: names[i].value,
+                mulaiTW: mulais[i].value,
+                batasTWTL: batass[i].value,
+                tutupSesi: tutups[i].value
+            });
+        }
+
+        let res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "save_session", sessions: newSessions })
+        });
+        let result = await res.json();
+        alert(result.message);
+        location.reload();
+    }
+
+    function populatePermitNames() {
+        if (!adminDataCache) return;
+        let role = document.getElementById("permit-role").value;
+        let selectName = document.getElementById("permit-name");
+        selectName.innerHTML = "";
+        let list = (role === "Siswa") ? adminDataCache.siswaList : adminDataCache.guruList;
+        
+        list.forEach(item => {
+            let opt = document.createElement("option");
+            opt.value = item.id;
+            opt.text = `${item.name} (${item.id})`;
+            selectName.appendChild(opt);
+        });
+    }
+
+    async function submitPermit() {
+        let role = document.getElementById("permit-role").value;
+        let selectName = document.getElementById("permit-name");
+        let id = selectName.value;
+        let name = selectName.options[selectName.selectedIndex].text.split(" (")[0];
+        let type = document.getElementById("permit-type").value;
+        let desc = document.getElementById("permit-desc").value;
+
+        let res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "save_permit", role, id, name, type, desc, date: appConfig.date })
+        });
+        let result = await res.json();
+        alert(result.message);
+        toggleAdminModal('modal-izin');
+        loadRealtimeData();
+    }
+
+    async function submitHoliday() {
+        let date = document.getElementById("holiday-date").value;
+        let desc = document.getElementById("holiday-desc").value;
+        if(!date || !desc) { alert("Lengkapi tanggal dan keterangan libur!"); return; }
+
+        let res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "save_holiday", date, desc })
+        });
+        let result = await res.json();
+        alert(result.message);
+        toggleAdminModal('modal-libur');
     }
 
     function logout() {

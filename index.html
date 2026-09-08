@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Absensi Online</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 15px; display: flex; justify-content: center; }
         .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
@@ -19,9 +20,6 @@
         .btn-warning:hover { background: #e0a800; }
         .hidden { display: none; }
         #reader { width: 100%; margin-top: 10px; }
-        .alert { padding: 10px; margin: 8px 0; border-radius: 5px; font-weight: bold; font-size: 14px; }
-        .alert-success { background: #d4edda; color: #155724; }
-        .alert-error { background: #f8d7da; color: #721c24; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
         th { background-color: #007BFF; color: white; }
@@ -40,7 +38,6 @@
         <p>Masukkan NISN (Siswa), PIN (Guru), atau PIN (Admin):</p>
         <input type="password" id="credential" placeholder="Masukkan NISN / PIN" maxlength="18">
         <button onclick="login()">Masuk</button>
-        <div id="login-alert"></div>
     </div>
 
     <div id="dashboard-section" class="hidden">
@@ -64,9 +61,8 @@
         </div>
 
         <div id="reader" class="hidden"></div>
-        <div id="scan-result"></div>
 
-        <!-- PANEL ADMIN KHUSUS PENGATURAN & IZIN -->
+        <!-- PANEL ADMIN KHUSUS PENGATURAN & IZIN (Murni terisolasi untuk Admin) -->
         <div id="admin-menu-section" class="hidden admin-panel">
             <h4>Panel Kontrol Admin</h4>
             <button class="btn-warning" onclick="toggleAdminModal('modal-sesi')">Pengaturan Sesi Dinamis</button>
@@ -143,7 +139,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzv8b1L6PkHO32_9eCv_x_XGnSwB34Eru1JnoYmWTjTNjJcGOEH6oELWQWs17jAw-4/exec"; // <-- Ganti dengan URL Web App Anda
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwP8q9Pa74wzo1P_W_I3TuROUDHXXSJJIAY0EdfIGfL_A44gwWrPsST0mjvK0qVeXOz/exec"; // <-- Ganti dengan URL Web App Anda
     let currentUser = null;
     let html5QrCode = null;
     let isCameraOpen = false;
@@ -155,9 +151,11 @@
     async function login() {
         const credential = document.getElementById("credential").value.trim();
         if (!credential) {
-            showAlert("login-alert", "Kredensial tidak boleh kosong!", "error");
+            Swal.fire("Peringatan", "Kredensial tidak boleh kosong!", "warning");
             return;
         }
+
+        Swal.fire({ title: "Memeriksa...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         try {
             let response = await fetch(SCRIPT_URL, {
@@ -165,15 +163,17 @@
                 body: JSON.stringify({ action: "login", credential: credential })
             });
             let result = await response.json();
+            Swal.close();
 
             if (result.status === "success") {
                 currentUser = result;
                 initDashboard();
             } else {
-                showAlert("login-alert", result.message, "error");
+                Swal.fire("Gagal Masuk", result.message, "error");
             }
         } catch (err) {
-            showAlert("login-alert", "Gagal terhubung ke server.", "error");
+            Swal.close();
+            Swal.fire("Error", "Gagal terhubung ke server.", "error");
         }
     }
 
@@ -182,16 +182,18 @@
         document.getElementById("dashboard-section").classList.remove("hidden");
         document.getElementById("user-info").innerText = `Halo, ${currentUser.name} (${currentUser.role})`;
 
+        Swal.fire({ title: "Memuat Konfigurasi...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
         try {
             let response = await fetch(SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({ action: "get_config" })
             });
             let result = await response.json();
+            Swal.close();
 
             if (result.status === "libur") {
-                alert(result.message);
-                logout();
+                Swal.fire("Hari Libur", result.message, "info").then(() => logout());
                 return;
             }
 
@@ -216,24 +218,23 @@
                     document.getElementById("monitoring-section").classList.remove("hidden");
                     loadAdminDataCache();
                     loadRealtimeData();
-                    realtimeInterval = setInterval(loadRealtimeData, 5000);
+                    realtimeInterval = setInterval(loadRealtimeData, 10000); // Diperhalus intervalnya agar ringan
                 }
             }
         } catch (err) {
+            Swal.close();
             console.error(err);
         }
     }
 
-    // Tombol Kamera Admin Berdampingan (Siswa & Guru)
     async function switchCameraTarget(targetType) {
         if (isCameraOpen) {
             await stopCamera();
-            // Jika target berubah, langsung buka kembali kamera untuk target baru
             if (activeScanTarget !== targetType) {
                 activeScanTarget = targetType;
                 startCamera();
             } else {
-                activeScanTarget = targetType; // Ditutup total
+                activeScanTarget = targetType;
             }
         } else {
             activeScanTarget = targetType;
@@ -279,7 +280,7 @@
             { fps: 10, qrbox: 250 },
             onScanSuccess
         ).catch(err => {
-            alert("Tidak dapat mengakses kamera HP: " + err);
+            Swal.fire("Gagal Kamera", "Tidak dapat mengakses kamera perangkat: " + err, "error");
             stopCamera();
         });
     }
@@ -332,13 +333,13 @@
             let result = await response.json();
 
             if (result.status === "success") {
-                showAlert("scan-result", result.message, "success");
+                Swal.fire({ icon: 'success', title: 'Berhasil', text: result.message, timer: 2000, showConfirmButton: false });
                 if (currentUser.role === "Admin") loadRealtimeData();
             } else {
-                showAlert("scan-result", result.message, "error");
+                Swal.fire("Perhatian", result.message, "warning");
             }
         } catch (err) {
-            showAlert("scan-result", "Gagal mengirim data absen ke server.", "error");
+            Swal.fire("Error", "Gagal mengirim data absen ke server.", "error");
         }
 
         setTimeout(async () => {
@@ -383,7 +384,6 @@
         });
     }
 
-    // Fungsi Pengaturan Admin & Modal
     function toggleAdminModal(modalId) {
         let el = document.getElementById(modalId);
         if (el.classList.contains("hidden")) {
@@ -410,7 +410,7 @@
         container.innerHTML = "";
         if (!appConfig || !appConfig.sessions) return;
 
-        appConfig.sessions.forEach((s, idx) => {
+        appConfig.sessions.forEach((s) => {
             let div = document.createElement("div");
             div.style.cssText = "border: 1px solid #ccc; padding: 8px; margin-bottom: 8px; border-radius: 4px;";
             div.innerHTML = `
@@ -454,13 +454,14 @@
             });
         }
 
+        Swal.fire({ title: "Menyimpan Sesi...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
         let res = await fetch(SCRIPT_URL, {
             method: "POST",
             body: JSON.stringify({ action: "save_session", sessions: newSessions })
         });
         let result = await res.json();
-        alert(result.message);
-        location.reload();
+        Swal.fire("Sukses", result.message, "success").then(() => location.reload());
     }
 
     function populatePermitNames() {
@@ -486,12 +487,14 @@
         let type = document.getElementById("permit-type").value;
         let desc = document.getElementById("permit-desc").value;
 
+        Swal.fire({ title: "Menyimpan Izin/Sakit...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
         let res = await fetch(SCRIPT_URL, {
             method: "POST",
             body: JSON.stringify({ action: "save_permit", role, id, name, type, desc, date: appConfig.date })
         });
         let result = await res.json();
-        alert(result.message);
+        Swal.fire("Sukses", result.message, "success");
         toggleAdminModal('modal-izin');
         loadRealtimeData();
     }
@@ -499,14 +502,16 @@
     async function submitHoliday() {
         let date = document.getElementById("holiday-date").value;
         let desc = document.getElementById("holiday-desc").value;
-        if(!date || !desc) { alert("Lengkapi tanggal dan keterangan libur!"); return; }
+        if(!date || !desc) { Swal.fire("Peringatan", "Lengkapi tanggal dan keterangan libur!", "warning"); return; }
+
+        Swal.fire({ title: "Menyimpan Hari Libur...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         let res = await fetch(SCRIPT_URL, {
             method: "POST",
             body: JSON.stringify({ action: "save_holiday", date, desc })
         });
         let result = await res.json();
-        alert(result.message);
+        Swal.fire("Sukses", result.message, "success");
         toggleAdminModal('modal-libur');
     }
 
@@ -517,16 +522,6 @@
         document.getElementById("credential").value = "";
         document.getElementById("dashboard-section").classList.add("hidden");
         document.getElementById("login-section").classList.remove("hidden");
-        document.getElementById("scan-result").innerHTML = "";
-    }
-
-    function showAlert(elementId, message, type) {
-        let el = document.getElementById(elementId);
-        el.className = `alert alert-${type}`;
-        el.innerText = message;
-        if(type === 'success') {
-            setTimeout(() => { el.innerText = ""; el.className = ""; }, 4000);
-        }
     }
 </script>
 

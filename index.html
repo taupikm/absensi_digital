@@ -1,763 +1,239 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sistem Absensi QR Code</title>
-  
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 20px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-    
-    .container-custom {
-      max-width: 450px;
-      margin: 0 auto;
-    }
-    
-    .card {
-      border-radius: 20px;
-      border: none;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      overflow: hidden;
-    }
-    
-    .card-header {
-      background: white;
-      border-bottom: 1px solid #f0f0f0;
-      padding: 20px 25px;
-      text-align: center;
-    }
-    
-    .card-header h1 {
-      font-size: 24px;
-      font-weight: 700;
-      color: #333;
-      margin: 0;
-    }
-    
-    .card-header p {
-      color: #666;
-      font-size: 14px;
-      margin: 5px 0 0;
-    }
-    
-    .card-body {
-      padding: 25px;
-    }
-    
-    .login-section {
-      display: block;
-    }
-    
-    .dashboard-section {
-      display: none;
-    }
-    
-    .form-control {
-      border-radius: 12px;
-      padding: 12px 15px;
-      border: 2px solid #e0e0e0;
-      font-size: 16px;
-      transition: all 0.3s;
-    }
-    
-    .form-control:focus {
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-    
-    .btn-primary-custom {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      border-radius: 12px;
-      padding: 12px;
-      font-weight: 600;
-      color: white;
-      width: 100%;
-      transition: all 0.3s;
-    }
-    
-    .btn-primary-custom:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-      color: white;
-    }
-    
-    .btn-primary-custom:disabled {
-      opacity: 0.6;
-      transform: none;
-    }
-    
-    .btn-outline-danger-custom {
-      border-radius: 12px;
-      padding: 12px;
-      font-weight: 600;
-      width: 100%;
-    }
-    
-    .user-info {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .user-info .name {
-      font-weight: 600;
-      color: #333;
-    }
-    
-    .user-info .role {
-      font-size: 12px;
-      color: #666;
-      background: #e9ecef;
-      padding: 3px 12px;
-      border-radius: 20px;
-    }
-    
-    .scanner-container {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 1;
-      background: #000;
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 15px;
-    }
-    
-    #video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    
-    #canvas {
-      display: none;
-    }
-    
-    .scanner-overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 70%;
-      height: 70%;
-      border: 3px solid #667eea;
-      border-radius: 10px;
-      box-shadow: 0 0 0 4000px rgba(0,0,0,0.4);
-    }
-    
-    .scanner-controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-    
-    .scanner-controls .btn {
-      flex: 1;
-      border-radius: 12px;
-      padding: 12px;
-      font-weight: 600;
-    }
-    
-    .session-info {
-      background: #f1f3f5;
-      padding: 12px 15px;
-      border-radius: 10px;
-      margin-bottom: 15px;
-    }
-    
-    .session-info .session-title {
-      font-weight: 600;
-      color: #333;
-    }
-    
-    .session-info .session-status {
-      font-size: 13px;
-      color: #666;
-    }
-    
-    .status-badge {
-      display: inline-block;
-      padding: 2px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    
-    .status-badge.active {
-      background: #51cf66;
-      color: white;
-    }
-    
-    .status-badge.waiting {
-      background: #ffd43b;
-      color: #333;
-    }
-    
-    .status-badge.closed {
-      background: #ff6b6b;
-      color: white;
-    }
-    
-    .result-box {
-      margin-top: 15px;
-      padding: 15px;
-      border-radius: 12px;
-      display: none;
-    }
-    
-    .result-box.success {
-      background: #d3f9d8;
-      border: 1px solid #51cf66;
-      display: block;
-    }
-    
-    .result-box.error {
-      background: #ffe3e3;
-      border: 1px solid #ff6b6b;
-      display: block;
-    }
-    
-    .result-box.info {
-      background: #e3f0ff;
-      border: 1px solid #4dabf7;
-      display: block;
-    }
-    
-    .result-box .title {
-      font-weight: 600;
-      margin-bottom: 5px;
-    }
-    
-    .result-box .message {
-      font-size: 14px;
-      color: #495057;
-    }
-    
-    .loading {
-      display: none;
-      text-align: center;
-      padding: 10px;
-    }
-    
-    .loading.active {
-      display: block;
-    }
-    
-    .spinner-border-custom {
-      width: 30px;
-      height: 30px;
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #667eea;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    .logout-btn {
-      background: none;
-      border: none;
-      color: #ff6b6b;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 14px;
-      padding: 5px 10px;
-    }
-    
-    .logout-btn:hover {
-      text-decoration: underline;
-    }
-    
-    .toast-container {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      width: 90%;
-      max-width: 400px;
-    }
-    
-    @media (max-width: 480px) {
-      body {
-        padding: 10px;
-      }
-      
-      .card-body {
-        padding: 20px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi Online QR Code</title>
+    <!-- Library QR Scanner (html5-qrcode) -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; }
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        button { background: #007BFF; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #a71d2a; }
+        .hidden { display: none; }
+        #reader { width: 100%; margin-top: 10px; }
+        .alert { padding: 10px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+    </style>
 </head>
 <body>
 
-<div class="container-custom">
-  <div class="card">
-    <div class="card-header">
-      <h1>📋 Absensi QR Code</h1>
-      <p>Sistem Absensi Online dengan QR Code</p>
+<div class="container">
+    <h2>Sistem Absensi Online</h2>
+
+    <!-- FORM LOGIN SATU KOLOM -->
+    <div id="login-section">
+        <p>Masukkan NISN (Siswa), PIN (Guru), atau PIN (Admin):</p>
+        <input type="password" id="credential" placeholder="Masukkan NISN / PIN" maxlength="18">
+        <button onclick="login()">Masuk</button>
+        <div id="login-alert"></div>
     </div>
-    
-    <div class="card-body">
-      
-      <!-- ===== LOGIN SECTION ===== -->
-      <div id="loginSection" class="login-section">
-        <div class="mb-3">
-          <label class="form-label fw-bold">NISN / PIN</label>
-          <input type="password" id="credential" class="form-control" 
-                 placeholder="Masukkan NISN (8 digit) atau PIN (4/5 digit)" 
-                 maxlength="18" autocomplete="off">
+
+    <!-- DASHBOARD UTAMA -->
+    <div id="dashboard-section" class="hidden">
+        <h3 id="user-info"></h3>
+        <p id="date-info"></p>
+
+        <div id="session-container">
+            <label>Pilih Sesi Absensi:</label>
+            <select id="select-sesi"></select>
         </div>
-        
-        <button class="btn-primary-custom" onclick="handleLogin()">
-          <i class="fas fa-sign-in-alt me-2"></i>Login
-        </button>
-        
-        <div id="loginResult" class="result-box mt-3"></div>
-      </div>
-      
-      <!-- ===== DASHBOARD SECTION ===== -->
-      <div id="dashboardSection" class="dashboard-section">
-        
-        <!-- User Info -->
-        <div class="user-info">
-          <div>
-            <div class="name" id="userName">-</div>
-            <span class="role" id="userRole">-</span>
-          </div>
-          <button class="logout-btn" onclick="handleLogout()">
-            <i class="fas fa-sign-out-alt me-1"></i>Logout
-          </button>
+
+        <div id="scanner-controls" class="hidden">
+            <button id="btn-toggle-cam" onclick="toggleCamera()">Buka Kamera Scanner</button>
+            <div id="reader" class="hidden"></div>
         </div>
-        
-        <!-- Session Info -->
-        <div class="session-info" id="sessionInfo">
-          <div class="session-title" id="sessionTitle">
-            <i class="fas fa-clock me-2"></i>Memuat sesi...
-          </div>
-          <div class="session-status" id="sessionStatus">-</div>
-        </div>
-        
-        <!-- Scanner -->
-        <div class="scanner-container">
-          <video id="video" playsinline></video>
-          <div class="scanner-overlay"></div>
-          <canvas id="canvas"></canvas>
-        </div>
-        
-        <div class="scanner-controls">
-          <button class="btn btn-success" id="startCameraBtn" onclick="handleStartCamera()">
-            <i class="fas fa-camera me-1"></i>Buka Kamera
-          </button>
-          <button class="btn btn-danger" id="stopCameraBtn" onclick="handleStopCamera()" disabled>
-            <i class="fas fa-camera-slash me-1"></i>Tutup
-          </button>
-        </div>
-        
-        <div class="loading" id="scanLoading">
-          <div class="spinner-border-custom"></div>
-          <p class="mt-2 text-muted" style="font-size:14px;">Memproses scan...</p>
-        </div>
-        
-        <div id="scanResult" class="result-box"></div>
-        
-        <!-- Info -->
-        <p class="text-center text-muted mt-3" style="font-size:12px;">
-          <i class="fas fa-info-circle me-1"></i>
-          Arahkan kamera ke QR Code siswa/guru
-        </p>
-      </div>
-      
+
+        <div id="scan-result"></div>
+        <button class="btn-danger" onclick="logout()">Keluar</button>
     </div>
-  </div>
 </div>
 
-<!-- Toast Notification -->
-<div class="toast-container" id="toastContainer"></div>
-
-<!-- JS Libraries -->
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
-// ============================================
-// KONFIGURASI
-// ============================================
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxu_4kxf9mi3PvNuyqBSThDCuffQDbCN5XhmfRdGI76CN9UwmwejXHyi1ISeVHyEC5mRA/exec';
-// GANTI URL DI ATAS DENGAN URL WEB APP ANDA!
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzSSG19yyFTN3jBYqw4FO1KxrUjAFBSeZLlPDMijtjblBtYYJIKqJZRsV37v6hEtci6/exec"; // <-- Masukkan URL Web App Google Script Anda di sini
+    let currentUser = null;
+    let html5QrCode = null;
+    let isCameraOpen = false;
+    let appConfig = null;
 
-// ============================================
-// VARIABEL GLOBAL
-// ============================================
-let currentUser = null;
-let videoStream = null;
-let isScanning = false;
-let scanFrameId = null;
-
-// ============================================
-// FUNGSI BACKEND CALL
-// ============================================
-async function callBackend(action, params = []) {
-  try {
-    const response = await fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: action,
-        params: params
-      })
-    });
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Backend Error:', error);
-    return {
-      status: 'error',
-      message: 'Gagal terhubung ke server: ' + error.message
-    };
-  }
-}
-
-// ============================================
-// FUNGSI LOGIN
-// ============================================
-async function handleLogin() {
-  const credential = document.getElementById('credential').value.trim();
-  const resultBox = document.getElementById('loginResult');
-  
-  if (!credential) {
-    showResult('loginResult', 'error', 'Error', 'Silakan masukkan NISN atau PIN');
-    return;
-  }
-  
-  showResult('loginResult', 'info', '⏳ Memproses...', 'Sedang memverifikasi kredensial...');
-  
-  const response = await callBackend('login', [credential]);
-  
-  if (response.status === 'success') {
-    currentUser = response.data;
-    currentUser.role = response.role;
-    
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('dashboardSection').style.display = 'block';
-    
-    document.getElementById('userName').textContent = currentUser.nama || currentUser.name;
-    document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
-    
-    // Load sessions
-    await loadSessions();
-    
-    // Auto start camera
-    setTimeout(handleStartCamera, 500);
-    
-  } else {
-    showResult('loginResult', 'error', '❌ Login Gagal', response.message);
-  }
-}
-
-// ============================================
-// FUNGSI LOAD SESSIONS
-// ============================================
-async function loadSessions() {
-  const response = await callBackend('getSessions');
-  
-  const title = document.getElementById('sessionTitle');
-  const status = document.getElementById('sessionStatus');
-  
-  if (response.status !== 'success' || response.length === 0) {
-    title.textContent = 'Tidak ada sesi aktif';
-    status.textContent = 'Tidak ada sesi yang tersedia';
-    return;
-  }
-  
-  const now = new Date();
-  const activeSessions = response.filter(s => {
-    const mulai = new Date(s.mulai);
-    const tutup = new Date(s.tutup);
-    return now >= mulai && now <= tutup;
-  });
-  
-  if (activeSessions.length === 0) {
-    title.textContent = 'Tidak ada sesi aktif';
-    status.textContent = 'Semua sesi belum dimulai atau sudah tutup';
-    return;
-  }
-  
-  const session = activeSessions[0];
-  title.textContent = `Sesi: ${session.nama}`;
-  
-  let statusText = '';
-  let statusClass = '';
-  if (session.status === 'tepat_waktu') {
-    statusText = '🟢 Tepat Waktu (Buka)';
-    statusClass = 'active';
-  } else if (session.status === 'terlambat') {
-    statusText = '🟡 Terlambat (Buka)';
-    statusClass = 'waiting';
-  } else {
-    statusText = '🔴 Tutup';
-    statusClass = 'closed';
-  }
-  
-  status.innerHTML = `<span class="status-badge ${statusClass}">${statusText}</span>`;
-}
-
-// ============================================
-// FUNGSI KAMERA
-// ============================================
-async function handleStartCamera() {
-  const video = document.getElementById('video');
-  const startBtn = document.getElementById('startCameraBtn');
-  const stopBtn = document.getElementById('stopCameraBtn');
-  
-  if (videoStream) {
-    handleStopCamera();
-  }
-  
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: 'environment',
-        width: { ideal: 640 },
-        height: { ideal: 480 }
-      }
-    });
-    
-    videoStream = stream;
-    video.srcObject = stream;
-    video.setAttribute('playsinline', true);
-    await video.play();
-    
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
-    
-    // Start scanning
-    startScanning();
-    
-  } catch (error) {
-    console.error('Camera error:', error);
-    showResult('scanResult', 'error', '❌ Error Kamera', 
-      'Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
-    startBtn.disabled = false;
-    stopBtn.disabled = true;
-  }
-}
-
-function handleStopCamera() {
-  if (videoStream) {
-    videoStream.getTracks().forEach(track => track.stop());
-    videoStream = null;
-    document.getElementById('video').srcObject = null;
-    isScanning = false;
-    
-    if (scanFrameId) {
-      cancelAnimationFrame(scanFrameId);
-      scanFrameId = null;
-    }
-    
-    document.getElementById('startCameraBtn').disabled = false;
-    document.getElementById('stopCameraBtn').disabled = true;
-  }
-}
-
-// ============================================
-// FUNGSI SCAN QR
-// ============================================
-function startScanning() {
-  if (!currentUser) return;
-  
-  isScanning = true;
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  const context = canvas.getContext('2d');
-  
-  function scanFrame() {
-    if (!isScanning || !videoStream) {
-      return;
-    }
-    
-    try {
-      if (video.videoWidth > 0 && video.videoHeight > 0) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: 'dontInvert',
-        });
-        
-        if (code && code.data) {
-          // Stop scanning temporarily
-          isScanning = false;
-          document.getElementById('scanLoading').classList.add('active');
-          
-          // Process QR code
-          processQRCode(code.data);
-          
-          // Resume scanning after delay
-          setTimeout(() => {
-            if (videoStream) {
-              isScanning = true;
-              document.getElementById('scanLoading').classList.remove('active');
-              scanFrameId = requestAnimationFrame(scanFrame);
-            }
-          }, 3000);
-          
-          return;
+    async function login() {
+        const credential = document.getElementById("credential").value.trim();
+        if (!credential) {
+            showAlert("login-alert", "Kredensial tidak boleh kosong!", "error");
+            return;
         }
-      }
-    } catch (e) {
-      console.error('Scan error:', e);
+
+        try {
+            let response = await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "login", credential: credential })
+            });
+            let result = await response.json();
+
+            if (result.status === "success") {
+                currentUser = result;
+                initDashboard();
+            } else {
+                showAlert("login-alert", result.message, "error");
+            }
+        } catch (err) {
+            showAlert("login-alert", "Gagal terhubung ke server.", "error");
+        }
     }
-    
-    if (isScanning && videoStream) {
-      scanFrameId = requestAnimationFrame(scanFrame);
+
+    async function initDashboard() {
+        document.getElementById("login-section").classList.add("hidden");
+        document.getElementById("dashboard-section").classList.remove("hidden");
+        document.getElementById("user-info").innerText = `Halo, ${currentUser.name} (${currentUser.role})`;
+
+        // Ambil Pengaturan Sesi & Hari Libur dari Backend
+        try {
+            let response = await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "get_config" })
+            });
+            let result = await response.json();
+
+            if (result.status === "libur") {
+                alert(result.message);
+                logout();
+                return;
+            }
+
+            if (result.status === "success") {
+                appConfig = result;
+                document.getElementById("date-info").innerText = `Tanggal: ${appConfig.date}`;
+                
+                let selectSesi = document.getElementById("select-sesi");
+                selectSesi.innerHTML = "";
+                appConfig.sessions.forEach(s => {
+                    let opt = document.createElement("option");
+                    opt.value = s.namaSesi;
+                    opt.text = `${s.namaSesi} (Mulai: ${s.mulaiTW} - Tutup: ${s.tutupSesi})`;
+                    selectSesi.appendChild(opt);
+                });
+
+                // Jika Admin atau Guru, tampilkan tombol buka/tutup kamera scanner
+                if (currentUser.role === "Admin" || currentUser.role === "Guru") {
+                    document.getElementById("scanner-controls").classList.remove("hidden");
+                } else {
+                    showAlert("scan-result", "Siswa menggunakan halaman ini hanya untuk verifikasi akun. Barcode Anda discan oleh Guru/Admin.", "error");
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
     }
-  }
-  
-  scanFrame();
-}
 
-// ============================================
-// FUNGSI PROSES QR
-// ============================================
-async function processQRCode(qrData) {
-  const loading = document.getElementById('scanLoading');
-  loading.classList.add('active');
-  
-  const response = await callBackend('scanQR', [qrData, currentUser]);
-  
-  loading.classList.remove('active');
-  
-  if (response.status === 'success') {
-    showResult('scanResult', 'success', '✅ Absensi Berhasil', 
-      `Nama: ${response.data.nama}\nStatus: ${response.data.status}\nSesi: ${response.data.session}`);
-    
-    // Reload session info
-    await loadSessions();
-    
-    // Show toast
-    showToast('success', `✅ ${response.data.nama} - ${response.data.status}`);
-    
-  } else {
-    showResult('scanResult', 'error', '❌ Gagal', response.message);
-    showToast('error', response.message);
-  }
-}
-
-// ============================================
-// FUNGSI UI HELPERS
-// ============================================
-function showResult(elementId, type, title, message) {
-  const element = document.getElementById(elementId);
-  element.className = `result-box ${type}`;
-  element.style.display = 'block';
-  element.innerHTML = `
-    <div class="title">${title}</div>
-    <div class="message" style="white-space:pre-line;">${message}</div>
-  `;
-  
-  if (type === 'success') {
-    setTimeout(() => {
-      element.style.display = 'none';
-    }, 5000);
-  }
-}
-
-function showToast(type, message) {
-  const container = document.getElementById('toastContainer');
-  const bgColor = type === 'success' ? '#51cf66' : '#ff6b6b';
-  
-  const toast = document.createElement('div');
-  toast.className = 'toast show';
-  toast.style.cssText = `
-    background: ${bgColor};
-    color: white;
-    border-radius: 12px;
-    padding: 12px 20px;
-    margin-bottom: 10px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-    animation: slideUp 0.3s ease;
-  `;
-  toast.textContent = message;
-  
-  container.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
-
-function handleLogout() {
-  handleStopCamera();
-  currentUser = null;
-  
-  document.getElementById('loginSection').style.display = 'block';
-  document.getElementById('dashboardSection').style.display = 'none';
-  document.getElementById('credential').value = '';
-  document.getElementById('loginResult').style.display = 'none';
-  document.getElementById('scanResult').style.display = 'none';
-}
-
-// ============================================
-// KEYBOARD SUPPORT
-// ============================================
-document.getElementById('credential').addEventListener('keypress', function(e) {
-  if (e.key === 'Enter') {
-    handleLogin();
-  }
-});
-
-// ============================================
-// CSS ANIMATION
-// ============================================
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideUp {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
+    function toggleCamera() {
+        if (!isCameraOpen) {
+            startCamera();
+        } else {
+            stopCamera();
+        }
     }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-`;
-document.head.appendChild(style);
 
-console.log('🚀 Sistem Absensi QR Code siap digunakan!');
-console.log('📋 Backend URL:', BACKEND_URL);
+    function startCamera() {
+        const readerDiv = document.getElementById("reader");
+        readerDiv.classList.remove("hidden");
+        document.getElementById("btn-toggle-cam").innerText = "Tutup Kamera Scanner";
+        document.getElementById("btn-toggle-cam").className = "btn-danger";
+        isCameraOpen = true;
+
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            onScanSuccess
+        ).catch(err => {
+            alert("Tidak dapat mengakses kamera HP: " + err);
+            stopCamera();
+        });
+    }
+
+    function stopCamera() {
+        if (html5QrCode && isCameraOpen) {
+            html5QrCode.stop().then(() => {
+                html5QrCode.clear();
+                cleanupCameraUI();
+            }).catch(err => {
+                cleanupCameraUI();
+            });
+        } else {
+            cleanupCameraUI();
+        }
+    }
+
+    function cleanupCameraUI() {
+        document.getElementById("reader").classList.add("hidden");
+        document.getElementById("btn-toggle-cam").innerText = "Buka Kamera Scanner";
+        document.getElementById("btn-toggle-cam").className = "";
+        isCameraOpen = false;
+    }
+
+    async function onScanSuccess(decodedText) {
+        // Hentikan sementara scanner saat memproses data agar tidak spam scan
+        if (html5QrCode && isCameraOpen) {
+            await html5QrCode.pause();
+        }
+
+        let selectedSesi = document.getElementById("select-sesi").value;
+
+        let payload = {
+            action: "scan",
+            scannerRole: currentUser.role,
+            scannerId: currentUser.id,
+            scannedCode: decodedText.trim(),
+            sesi: selectedSesi,
+            tanggal: appConfig.date
+        };
+
+        try {
+            let response = await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            let result = await response.json();
+
+            if (result.status === "success") {
+                showAlert("scan-result", result.message, "success");
+            } else {
+                showAlert("scan-result", result.message, "error"); // Pesan jelas seperti "NISN ... sudah absen sesi ini" atau batasan guru
+            }
+        } catch (err) {
+            showAlert("scan-result", "Gagal mengirim data absen ke server.", "error");
+        }
+
+        // Lanjutkan kamera kembali setelah 2.5 detik
+        setTimeout(async () => {
+            if (html5QrCode && isCameraOpen) {
+                await html5QrCode.resume();
+            }
+        }, 2500);
+    }
+
+    function logout() {
+        if (isCameraOpen) stopCamera();
+        currentUser = null;
+        document.getElementById("credential").value = "";
+        document.getElementById("dashboard-section").classList.add("hidden");
+        document.getElementById("login-section").classList.remove("hidden");
+        document.getElementById("scan-result").innerHTML = "";
+    }
+
+    function showAlert(elementId, message, type) {
+        let el = document.getElementById(elementId);
+        el.className = `alert alert-${type}`;
+        el.innerText = message;
+        if(type === 'success') {
+            setTimeout(() => { el.innerText = ""; el.className = ""; }, 4000);
+        }
+    }
 </script>
 
 </body>

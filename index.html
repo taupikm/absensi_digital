@@ -18,7 +18,7 @@
         .btn-success:hover { background: #218838; }
         .btn-warning { background: #ffc107; color: #000; }
         .btn-warning:hover { background: #e0a800; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         #reader { width: 100%; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
@@ -36,7 +36,7 @@
 
     <div id="login-section">
         <p>Masukkan NISN (Siswa), PIN (Guru), atau PIN (Admin):</p>
-        <input type="password" id="credential" placeholder="Masukkan NISN / PIN" maxlength="18">
+        <input type="text" id="credential" placeholder="Masukkan NISN / PIN" autocomplete="off">
         <button onclick="login()">Masuk</button>
     </div>
 
@@ -54,7 +54,7 @@
             <button id="btn-toggle-cam" onclick="toggleCamera('Siswa')">Buka Kamera Scanner Siswa</button>
         </div>
 
-        <!-- TOMBOL SCANNER ADMIN (2 BERDAMPINGAN DI ATAS) -->
+        <!-- TOMBOL SCANNER ADMIN -->
         <div id="admin-scanner-controls" class="hidden camera-flex">
             <button id="btn-cam-siswa" class="btn-success" onclick="switchCameraTarget('Siswa')">Buka Kamera Siswa</button>
             <button id="btn-cam-guru" class="btn-success" onclick="switchCameraTarget('Guru')">Buka Kamera Guru</button>
@@ -62,7 +62,7 @@
 
         <div id="reader" class="hidden"></div>
 
-        <!-- PANEL ADMIN KHUSUS PENGATURAN & IZIN (Murni terisolasi untuk Admin) -->
+        <!-- PANEL ADMIN KHUSUS PENGATURAN & IZIN -->
         <div id="admin-menu-section" class="hidden admin-panel">
             <h4>Panel Kontrol Admin</h4>
             <button class="btn-warning" onclick="toggleAdminModal('modal-sesi')">Pengaturan Sesi Dinamis</button>
@@ -139,7 +139,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwP8q9Pa74wzo1P_W_I3TuROUDHXXSJJIAY0EdfIGfL_A44gwWrPsST0mjvK0qVeXOz/exec"; // <-- Ganti dengan URL Web App Anda
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby6Ru9brdBnlgdfa7gpZ5t-t5JThiTR3GD3bSSNva9d6BzCsfpxRi5qB0u-kzw6G7fr/execE"; // <-- Ganti dengan URL Web App Anda
     let currentUser = null;
     let html5QrCode = null;
     let isCameraOpen = false;
@@ -182,6 +182,12 @@
         document.getElementById("dashboard-section").classList.remove("hidden");
         document.getElementById("user-info").innerText = `Halo, ${currentUser.name} (${currentUser.role})`;
 
+        // Sembunyikan elemen admin secara mutlak saat awal inisialisasi
+        document.getElementById("admin-scanner-controls").classList.add("hidden");
+        document.getElementById("admin-menu-section").classList.add("hidden");
+        document.getElementById("monitoring-section").classList.add("hidden");
+        document.getElementById("teacher-scanner-controls").classList.add("hidden");
+
         Swal.fire({ title: "Memuat Konfigurasi...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         try {
@@ -218,7 +224,7 @@
                     document.getElementById("monitoring-section").classList.remove("hidden");
                     loadAdminDataCache();
                     loadRealtimeData();
-                    realtimeInterval = setInterval(loadRealtimeData, 10000); // Diperhalus intervalnya agar ringan
+                    realtimeInterval = setInterval(loadRealtimeData, 10000);
                 }
             }
         } catch (err) {
@@ -456,12 +462,31 @@
 
         Swal.fire({ title: "Menyimpan Sesi...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-        let res = await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "save_session", sessions: newSessions })
-        });
-        let result = await res.json();
-        Swal.fire("Sukses", result.message, "success").then(() => location.reload());
+        try {
+            let res = await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "save_session", sessions: newSessions })
+            });
+            let result = await res.json();
+            
+            // Perbarui data sesi secara lokal tanpa melakukan reload halaman
+            appConfig.sessions = newSessions;
+            let selectSesi = document.getElementById("select-sesi");
+            let currentSelected = selectSesi.value;
+            selectSesi.innerHTML = "";
+            appConfig.sessions.forEach(s => {
+                let opt = document.createElement("option");
+                opt.value = s.namaSesi;
+                opt.text = `${s.namaSesi} (Mulai: ${s.mulaiTW} - Tutup: ${s.tutupSesi})`;
+                selectSesi.appendChild(opt);
+            });
+            selectSesi.value = currentSelected;
+
+            toggleAdminModal('modal-sesi');
+            Swal.fire("Sukses", result.message, "success");
+        } catch(err) {
+            Swal.fire("Error", "Gagal menyimpan perubahan sesi.", "error");
+        }
     }
 
     function populatePermitNames() {
